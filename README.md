@@ -17,6 +17,22 @@
 └─ README.md
 ```
 
+## 로그인/이용코드 설정
+
+유료화 전 단계로 관리자 로그인과 이용코드 로그인을 사용할 수 있습니다.
+
+Render의 Environment에 아래 값을 추가하세요.
+
+```env
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=원하는_관리자_비밀번호
+APP_ACCESS_CODE=결제자에게_알려줄_이용코드
+```
+
+- 관리자는 `ADMIN_USERNAME`과 `ADMIN_PASSWORD`로 로그인합니다.
+- 일반 이용자는 `APP_ACCESS_CODE`만 입력해서 사용할 수 있습니다.
+- 분석/답장/마음분석 API는 로그인 토큰이 없으면 서버에서 거절합니다.
+
 ## 1. 준비물
 
 Node.js 18 이상이 필요합니다.

@@ -1,11 +1,21 @@
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
 
 loadDotEnv(path.join(__dirname, ".env"));
 
 const PORT = Number(process.env.PORT || 3000);
 const ROOT = __dirname;
+const SESSIONS = new Map();
+const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 14;
+const USAGE_STATS = {
+  analyzeStyle: 0,
+  generateReplies: 0,
+  analyzeFeelings: 0,
+  logins: 0,
+  startedAt: new Date().toISOString()
+};
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -22,15 +32,37 @@ const server = http.createServer(async (req, res) => {
   try {
     const url = new URL(req.url, `http://${req.headers.host}`);
 
+    if (req.method === "POST" && url.pathname === "/api/login") {
+      return handleLogin(req, res);
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/session") {
+      return handleSession(req, res);
+    }
+
+    if (req.method === "POST" && url.pathname === "/api/logout") {
+      return handleLogout(req, res);
+    }
+
+    if (req.method === "GET" && url.pathname === "/api/admin/status") {
+      return handleAdminStatus(req, res);
+    }
+
     if (req.method === "POST" && url.pathname === "/api/analyze-style") {
+      if (!requireAuth(req, res)) return;
+      USAGE_STATS.analyzeStyle += 1;
       return handleAnalyze(req, res);
     }
 
     if (req.method === "POST" && url.pathname === "/api/generate-replies") {
+      if (!requireAuth(req, res)) return;
+      USAGE_STATS.generateReplies += 1;
       return handleReplies(req, res);
     }
 
     if (req.method === "POST" && url.pathname === "/api/analyze-feelings") {
+      if (!requireAuth(req, res)) return;
+      USAGE_STATS.analyzeFeelings += 1;
       return handleFeelings(req, res);
     }
 
@@ -51,6 +83,111 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, () => {
   console.log(`Kakao tone reply app is running at http://localhost:${PORT}`);
 });
+
+async function handleLogin(req, res) {
+  const body = await readJsonBody(req);
+  const mode = String(body.mode || "admin").trim();
+  const username = String(body.username || "").trim();
+  const password = String(body.password || "");
+  const accessCode = String(body.accessCode || "").trim();
+
+  const adminUsername = process.env.ADMIN_USERNAME || "admin";
+  const adminPassword = process.env.ADMIN_PASSWORD || "";
+  const appAccessCode = process.env.APP_ACCESS_CODE || "";
+
+  let role = "";
+  if (mode === "admin") {
+    if (!adminPassword) {
+      return sendJson(res, 500, {
+        error: {
+          type: "auth_config_error",
+          message: "관리자 비밀번호가 아직 설정되지 않았습니다. ADMIN_PASSWORD를 환경변수에 넣어주세요."
+        }
+      });
+    }
+
+    if (username === adminUsername && safeEqual(password, adminPassword)) {
+      role = "admin";
+    }
+  } else if (mode === "code") {
+    if (!appAccessCode) {
+      return sendJson(res, 500, {
+        error: {
+          type: "auth_config_error",
+          message: "이용코드가 아직 설정되지 않았습니다. APP_ACCESS_CODE를 환경변수에 넣어주세요."
+        }
+      });
+    }
+
+    if (safeEqual(accessCode, appAccessCode)) {
+      role = "user";
+    }
+  }
+
+  if (!role) {
+    return sendJson(res, 401, {
+      error: {
+        type: "auth_error",
+        message: "로그인 정보가 맞지 않습니다. 아이디, 비밀번호 또는 이용코드를 다시 확인해주세요."
+      }
+    });
+  }
+
+  const token = crypto.randomBytes(32).toString("hex");
+  SESSIONS.set(token, {
+    role,
+    createdAt: Date.now(),
+    expiresAt: Date.now() + SESSION_TTL_MS
+  });
+  USAGE_STATS.logins += 1;
+
+  sendJson(res, 200, { token, role });
+}
+
+function handleAdminStatus(req, res) {
+  const session = getSession(req);
+  if (!session) {
+    return sendJson(res, 401, {
+      error: { type: "auth_error", message: "로그인이 필요합니다." }
+    });
+  }
+
+  if (session.role !== "admin") {
+    return sendJson(res, 403, {
+      error: { type: "auth_error", message: "관리자만 볼 수 있는 페이지입니다." }
+    });
+  }
+
+  cleanupExpiredSessions();
+  const provider = String(process.env.LLM_PROVIDER || "gemini").toLowerCase();
+  sendJson(res, 200, {
+    provider,
+    model: provider === "openai"
+      ? process.env.OPENAI_MODEL || "gpt-4.1-mini"
+      : process.env.GEMINI_MODEL || "gemini-2.5-flash",
+    hasAdminPassword: Boolean(process.env.ADMIN_PASSWORD),
+    hasAccessCode: Boolean(process.env.APP_ACCESS_CODE),
+    activeSessions: SESSIONS.size,
+    usage: USAGE_STATS
+  });
+}
+
+function handleSession(req, res) {
+  const session = getSession(req);
+  if (!session) {
+    return sendJson(res, 401, {
+      error: { type: "auth_error", message: "로그인이 필요합니다." }
+    });
+  }
+
+  sendJson(res, 200, { role: session.role });
+}
+
+function handleLogout(req, res) {
+  const token = getAuthToken(req);
+  if (token) SESSIONS.delete(token);
+  sendJson(res, 200, { ok: true });
+}
 
 async function handleAnalyze(req, res) {
   const body = await readJsonBody(req);
@@ -126,6 +263,7 @@ async function handleReplies(req, res) {
   const incomingMessage = String(body.incomingMessage || "").trim();
   const mood = String(body.mood || "평소 그대로").trim();
   const customMood = String(body.customMood || "").trim();
+  const situationGuide = getSituationGuide(mood);
   const conversationContext = Array.isArray(body.conversationContext)
     ? body.conversationContext
         .filter((turn) => turn && typeof turn.text === "string")
@@ -179,6 +317,11 @@ async function handleReplies(req, res) {
     "상대방의 새 메시지:",
     incomingMessage,
     "",
+    `상황 모드: ${mood}`,
+    `상황별 판단 기준: ${situationGuide}`,
+    '최종 응답은 반드시 {"strategy_summary":"...","replies":["...","...","..."]} 순수 JSON만 사용한다.',
+    "strategy_summary는 지금 보내야 할 방향을 1문장으로 요약한다.",
+    "",
     "위 정보를 반영해 답장 후보 3개를 JSON으로만 제안해줘.",
     "앞서 선택한 내 답장과 같은 말을 반복하지 말고, 대화가 자연스럽게 이어지도록 만들어줘."
   ].join("\n");
@@ -188,9 +331,10 @@ async function handleReplies(req, res) {
     schema: {
       type: "object",
       properties: {
+        strategy_summary: { type: "string" },
         replies: { type: "array", items: { type: "string" } }
       },
-      required: ["replies"]
+      required: ["strategy_summary", "replies"]
     }
   });
 
@@ -222,7 +366,36 @@ async function handleReplies(req, res) {
     });
   }
 
-  sendJson(res, 200, { replies });
+  sendJson(res, 200, {
+    strategy_summary: String(parsed.strategy_summary || "").trim(),
+    replies
+  });
+}
+
+function getSituationGuide(mood) {
+  if (mood.includes("재회")) {
+    return [
+      "예전 대화 흐름을 보고 상대가 부담을 느끼지 않으면서 다시 이어갈 수 있는 루트를 제안한다.",
+      "가능성이 낮아 보이면 무리한 재회 멘트 대신 가볍게 관계를 회복하는 대화 방안을 제안한다.",
+      "집착, 장문 사과, 감정 압박, 갑작스러운 고백은 피한다."
+    ].join(" ");
+  }
+
+  if (mood.includes("썸") || mood.includes("소개팅")) {
+    return [
+      "상대의 반응 온도와 질문 여부를 보고 너무 들이대지 않으면서 호감도를 높이는 답장을 만든다.",
+      "상대 관심사에 맞춘 질문, 가벼운 설렘, 약속 제안 타이밍을 상황에 맞게 판단한다."
+    ].join(" ");
+  }
+
+  if (mood.includes("손절")) {
+    return [
+      "상대에게 상처를 최소화하면서 선을 긋거나 대화를 정리하는 방향으로 답한다.",
+      "상대가 무례하거나 반복적으로 부담을 주는 흐름이면 더 단호하게, 단순 거리두기면 부드럽게 제안한다."
+    ].join(" ");
+  }
+
+  return "사용자의 말투를 유지하면서 선택한 분위기에 맞는 자연스러운 카카오톡 답장을 만든다.";
 }
 
 async function handleFeelings(req, res) {
@@ -280,6 +453,16 @@ async function handleFeelings(req, res) {
         : "서로의 호감 신호와 대화 온도를 균형 있게 본다.",
     "",
     "최근 대화:",
+    "엄격한 점수 기준:",
+    "score는 0부터 100 사이 정수다. 매우 보수적으로 매긴다.",
+    "기본 점수는 40점에서 시작한다. 애매하거나 근거가 부족하면 35~45점으로 둔다.",
+    "단순한 ㅋㅋ, 이모티콘, 맞장구, 예의상 답장만으로는 55점 이상 주지 않는다.",
+    "상대가 먼저 질문하거나 대화를 이어가려는 행동이 없으면 60점 이상 주지 않는다.",
+    "70점 이상은 명확한 호감 신호가 최소 3개 이상 있을 때만 가능하다.",
+    "85점 이상은 상대가 먼저 만나자, 보고 싶다, 궁금하다, 계속 대화하고 싶다는 식의 강한 신호가 있을 때만 가능하다.",
+    "단답, 질문 없음, 회피, 늦은 답장, 부담스러워하는 표현, 예의상 리액션은 감점한다.",
+    "점수 구간: 0~20 관심 낮음, 21~40 예의상/애매함, 41~55 중립/판단보류, 56~70 약한 호감 가능성, 71~85 꽤 강한 호감, 86~100 매우 강한 호감.",
+    "",
     compactMessages.join("\n")
   ].join("\n");
 
@@ -600,6 +783,55 @@ function sendJson(res, status, data) {
 function sendText(res, status, text) {
   res.writeHead(status, { "Content-Type": "text/plain; charset=utf-8" });
   res.end(text);
+}
+
+function requireAuth(req, res) {
+  const session = getSession(req);
+  if (session) return true;
+
+  sendJson(res, 401, {
+    error: {
+      type: "auth_error",
+      message: "로그인이 필요합니다. 관리자 계정이나 이용코드로 먼저 로그인해주세요."
+    }
+  });
+  return false;
+}
+
+function getSession(req) {
+  cleanupExpiredSessions();
+  const token = getAuthToken(req);
+  if (!token) return null;
+
+  const session = SESSIONS.get(token);
+  if (!session) return null;
+
+  if (session.expiresAt < Date.now()) {
+    SESSIONS.delete(token);
+    return null;
+  }
+
+  return session;
+}
+
+function cleanupExpiredSessions() {
+  const now = Date.now();
+  for (const [token, session] of SESSIONS.entries()) {
+    if (session.expiresAt < now) SESSIONS.delete(token);
+  }
+}
+
+function getAuthToken(req) {
+  const authHeader = req.headers.authorization || "";
+  if (!authHeader.startsWith("Bearer ")) return "";
+  return authHeader.slice("Bearer ".length).trim();
+}
+
+function safeEqual(left, right) {
+  const leftBuffer = Buffer.from(String(left));
+  const rightBuffer = Buffer.from(String(right));
+  if (leftBuffer.length !== rightBuffer.length) return false;
+  return crypto.timingSafeEqual(leftBuffer, rightBuffer);
 }
 
 function loadDotEnv(filePath) {

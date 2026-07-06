@@ -1,23 +1,25 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="ko">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#7c3aed">
-  <title>말투 답장 추천</title>
+  <title>말투 감정 코치</title>
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" href="/icons/icon-192.png">
   <style>
     :root {
-      --bg: #f6f0d7;
+      --bg: #fff4dc;
       --surface: #ffffff;
-      --surface-soft: #fffdf4;
+      --surface-soft: #fffaf1;
       --ink: #241f16;
-      --muted: #766d58;
-      --line: #eadfbf;
+      --muted: #7b6656;
+      --line: #f0d9c4;
       --accent: #fee500;
       --accent-dark: #2d2414;
-      --accent-soft: #fff5a8;
+      --accent-soft: #fff0b8;
+      --coral: #ff7a8a;
+      --coral-soft: #fff0f3;
       --mine: #fee500;
       --theirs: #ffffff;
       --chat-bg: #bacee0;
@@ -35,8 +37,9 @@
       margin: 0;
       min-height: 100vh;
       background:
-        radial-gradient(circle at top left, rgba(254, 229, 0, 0.42), transparent 24rem),
-        linear-gradient(180deg, #fff9d6 0%, var(--bg) 100%);
+        radial-gradient(circle at top left, rgba(254, 229, 0, 0.48), transparent 24rem),
+        radial-gradient(circle at top right, rgba(255, 122, 138, 0.22), transparent 22rem),
+        linear-gradient(180deg, #fff8d7 0%, var(--bg) 58%, #fff8f0 100%);
       color: var(--ink);
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       letter-spacing: 0;
@@ -251,6 +254,147 @@
       display: block;
     }
 
+    .auth-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background:
+        radial-gradient(circle at top left, rgba(254, 229, 0, 0.56), transparent 24rem),
+        rgba(246, 240, 215, 0.96);
+    }
+
+    .auth-screen.hide {
+      display: none;
+    }
+
+    .auth-card {
+      width: min(100%, 420px);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      box-shadow: var(--shadow);
+      padding: 22px;
+    }
+
+    .auth-card h2 {
+      font-size: 24px;
+    }
+
+    .auth-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin: 18px 0 14px;
+    }
+
+    .auth-tab {
+      min-height: 40px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .auth-tab.active {
+      background: var(--accent);
+      color: var(--accent-dark);
+      border-color: var(--accent);
+    }
+
+    .auth-form {
+      display: grid;
+      gap: 10px;
+    }
+
+    .auth-form.hide {
+      display: none;
+    }
+
+    .account-badge {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.84);
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .account-badge.hide {
+      display: none;
+    }
+
+    .tiny-btn {
+      min-height: 30px;
+      padding: 0 10px;
+      border-radius: 8px;
+      background: white;
+      border: 1px solid var(--line);
+      color: var(--accent-dark);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .admin-panel {
+      display: none;
+      margin-bottom: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .admin-panel.show {
+      display: block;
+    }
+
+    .admin-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .admin-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      padding: 16px 18px 18px;
+    }
+
+    .admin-stat {
+      min-height: 78px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+    }
+
+    .admin-label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .admin-value {
+      margin-top: 8px;
+      font-size: 20px;
+      font-weight: 900;
+      word-break: break-word;
+    }
+
     .participant-list,
     .pill-list,
     .tag-list {
@@ -423,6 +567,34 @@
       margin-top: 14px;
     }
 
+    .strategy-box {
+      display: none;
+      margin-top: 14px;
+      border: 1px solid rgba(255, 122, 138, 0.32);
+      border-radius: 8px;
+      background: var(--coral-soft);
+      padding: 13px;
+    }
+
+    .strategy-box.show {
+      display: block;
+    }
+
+    .strategy-label {
+      color: #b4234c;
+      font-size: 12px;
+      font-weight: 900;
+      margin-bottom: 6px;
+    }
+
+    .strategy-text {
+      color: var(--ink);
+      line-height: 1.5;
+      font-weight: 800;
+      word-break: keep-all;
+      overflow-wrap: anywhere;
+    }
+
     .reply {
       display: grid;
       grid-template-columns: 1fr auto;
@@ -585,21 +757,96 @@
       .mini-actions {
         grid-template-columns: 1fr;
       }
+
+      .admin-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .admin-grid {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
 <body>
+  <section class="auth-screen" id="authScreen">
+    <div class="auth-card">
+      <h2>로그인</h2>
+      <p class="hint">관리자는 관리자 계정으로, 이용자는 전달받은 이용코드로 들어갈 수 있습니다.</p>
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="adminTab" type="button">관리자</button>
+        <button class="auth-tab" id="codeTab" type="button">이용코드</button>
+      </div>
+      <div class="auth-form" id="adminLoginForm">
+        <input id="adminUsername" type="text" autocomplete="username" placeholder="관리자 아이디">
+        <input id="adminPassword" type="password" autocomplete="current-password" placeholder="관리자 비밀번호">
+        <button class="primary" id="adminLoginBtn" type="button">관리자로 로그인</button>
+      </div>
+      <div class="auth-form hide" id="codeLoginForm">
+        <input id="accessCode" type="password" autocomplete="one-time-code" placeholder="이용코드">
+        <button class="primary" id="codeLoginBtn" type="button">이용코드로 시작</button>
+      </div>
+      <div class="error" id="authError"></div>
+    </div>
+  </section>
   <main class="app">
     <header class="topbar">
       <div class="brand">
         <div class="logo">톡</div>
         <div>
-          <h1>내 말투 톡답장</h1>
-          <p class="subtitle">카카오톡 대화를 붙여넣고 내 말투를 익힌 뒤, 상대 메시지에 자연스럽게 이어지는 답장을 받아보세요.</p>
+          <h1>말투 감정 코치</h1>
+          <p class="subtitle">카톡 대화를 바탕으로 내 말투와 상대 흐름을 읽고, 지금 보내기 좋은 답장을 추천해요.</p>
         </div>
       </div>
-      <div class="status" id="status">대화 txt를 붙여넣으면 참여자와 최근 대화를 먼저 정리합니다.</div>
+      <div class="status" id="status">대화를 넣고 내 이름을 선택하면 말투와 상황을 함께 분석합니다.</div>
     </header>
+
+    <section class="admin-panel" id="adminPanel">
+      <div class="admin-head">
+        <div>
+          <h2>관리자 페이지</h2>
+          <p class="hint">API 키는 표시하지 않고, 운영 상태와 사용량만 보여줍니다.</p>
+        </div>
+        <button class="secondary" id="refreshAdminBtn" type="button">새로고침</button>
+      </div>
+      <div class="admin-grid">
+        <div class="admin-stat">
+          <div class="admin-label">AI 제공자</div>
+          <div class="admin-value" id="adminProvider">-</div>
+        </div>
+        <div class="admin-stat">
+          <div class="admin-label">모델</div>
+          <div class="admin-value" id="adminModel">-</div>
+        </div>
+        <div class="admin-stat">
+          <div class="admin-label">현재 로그인</div>
+          <div class="admin-value" id="adminSessions">-</div>
+        </div>
+        <div class="admin-stat">
+          <div class="admin-label">답장 추천</div>
+          <div class="admin-value" id="adminReplies">-</div>
+        </div>
+        <div class="admin-stat">
+          <div class="admin-label">말투 분석</div>
+          <div class="admin-value" id="adminStyles">-</div>
+        </div>
+        <div class="admin-stat">
+          <div class="admin-label">마음 분석</div>
+          <div class="admin-value" id="adminFeelings">-</div>
+        </div>
+        <div class="admin-stat">
+          <div class="admin-label">관리자 비밀번호</div>
+          <div class="admin-value" id="adminPasswordSet">-</div>
+        </div>
+        <div class="admin-stat">
+          <div class="admin-label">이용코드</div>
+          <div class="admin-value" id="adminCodeSet">-</div>
+        </div>
+      </div>
+      <div class="error" id="adminError"></div>
+    </section>
 
     <section class="grid">
       <div class="stack">
@@ -609,13 +856,13 @@
             <h2>카카오톡 대화 붙여넣기</h2>
           </div>
           <div class="card-body">
-            <textarea id="chatInput" placeholder="예:&#10;2026년 7월 5일 오후 9:12, 지민 : 오늘 뭐해?&#10;2026년 7월 5일 오후 9:13, 나 : 집 가는 중ㅋㅋ&#10;&#10;또는&#10;[지민] [오후 9:12] 오늘 뭐해?&#10;[나] [오후 9:13] 집 가는 중ㅋㅋ"></textarea>
+            <textarea id="chatInput" placeholder="예시&#10;2026년 7월 5일 오후 9:12, 지민 : 오늘 뭐해?&#10;2026년 7월 5일 오후 9:13, 나 : 집 가는 중ㅋㅋ&#10;&#10;또는&#10;[지민] [오후 9:12] 오늘 뭐해?&#10;[나] [오후 9:13] 집 가는 중ㅋㅋ"></textarea>
             <div class="row">
               <button class="primary" id="parseBtn">분석 시작하기</button>
               <button class="secondary" id="fileBtn">카톡 txt 불러오기</button>
               <input id="fileInput" type="file" accept=".txt,text/plain" hidden>
             </div>
-            <p class="hint">카카오톡 대화 내보내기 txt 파일을 불러오거나, 내용을 직접 붙여넣을 수 있습니다. 입장/퇴장/날짜 구분선 같은 시스템 메시지는 제외합니다.</p>
+            <p class="hint">카카오톡 대화 내보내기 txt 파일을 불러오거나, 내용을 직접 붙여넣을 수 있습니다. 분석에는 최근 30일 대화 중 최대 150개만 사용합니다.</p>
             <div class="error" id="parseError"></div>
           </div>
         </article>
@@ -627,14 +874,70 @@
           </div>
           <div class="card-body">
             <div class="participant-list" id="participantList"></div>
-            <p class="hint" id="parseMeta">아직 파싱된 대화가 없습니다.</p>
+            <p class="hint" id="parseMeta">아직 분석된 대화가 없습니다.</p>
+          </div>
+        </article>
+
+        <article class="card locked" id="analysisCard">
+          <div class="card-head">
+            <span class="step-num">3</span>
+            <h2>말투 분석</h2>
+          </div>
+          <div class="card-body">
+            <button class="primary" id="analyzeBtn" disabled>말투 분석하기</button>
+            <p class="hint">내가 보낸 메시지만 모아서 말투를 분석합니다. 분석 결과는 이후 답장 생성에 사용됩니다.</p>
+            <div class="analysis-box" id="analysisResult">
+              <p class="summary" id="styleSummary"></p>
+              <div class="tag-list" id="traitList"></div>
+            </div>
+            <div class="error" id="analysisError"></div>
+          </div>
+        </article>
+
+        <article class="card locked" id="moodCard">
+          <div class="card-head">
+            <span class="step-num">4</span>
+            <h2>지금 상황 선택</h2>
+          </div>
+          <div class="card-body">
+            <div class="pill-list" id="moodList"></div>
+            <p class="hint" id="situationHint">상황을 선택하면 답장 방향이 달라집니다.</p>
+            <input id="customMood" type="text" placeholder="직접 입력: 너무 무겁지 않게, 다시 연락하고 싶은 느낌, 깔끔하게 선 긋기">
+          </div>
+        </article>
+
+        <article class="card locked" id="replyCard">
+          <div class="card-head">
+            <span class="step-num">5</span>
+            <h2>새 메시지에 답장 추천받기</h2>
+          </div>
+          <div class="card-body">
+            <div class="flow-panel" id="flowPanel">
+              <div class="flow-title">
+                <span>이어지는 대화</span>
+                <span id="flowCount">0/6</span>
+              </div>
+              <div class="flow-list" id="flowList"></div>
+            </div>
+            <textarea id="incomingMessage" placeholder="상대방의 다음 톡을 입력하세요. 예: 오늘 좀 힘들었어"></textarea>
+            <div class="row">
+              <button class="primary" id="replyBtn" disabled>답장 추천받기</button>
+              <button class="secondary" id="regenerateBtn" disabled>다른 답장 다시 뽑기</button>
+              <button class="secondary" id="resetFlowBtn" disabled>대화 흐름 초기화</button>
+            </div>
+            <div class="strategy-box" id="strategyBox">
+              <div class="strategy-label">상황 판단</div>
+              <div class="strategy-text" id="strategyText"></div>
+            </div>
+            <div class="reply-list" id="replyList"></div>
+            <div class="error" id="replyError"></div>
           </div>
         </article>
 
         <article class="card locked" id="feelingCard">
           <div class="card-head">
-            <span class="step-num">4</span>
-            <h2>마음 분석</h2>
+            <span class="step-num">6</span>
+            <h2>마음 분석 (선택사항)</h2>
           </div>
           <div class="card-body">
             <div class="mini-actions">
@@ -642,7 +945,7 @@
               <button class="secondary" id="otherFeelingBtn" disabled>상대 마음 분석기</button>
               <button class="secondary" id="myFeelingBtn" disabled>내 마음 분석기</button>
             </div>
-            <p class="hint">대화에 드러난 신호를 바탕으로 조심스럽게 추정합니다. 실제 마음을 확정하는 기능은 아니에요.</p>
+            <p class="hint">최근 30일 대화 중 최대 150개를 기준으로 보수적으로 추정합니다. 실제 마음을 확정하는 기능은 아니에요.</p>
             <div class="analysis-box" id="feelingResult">
               <div class="score-head">
                 <span id="feelingTitle">호감도 체크</span>
@@ -656,76 +959,13 @@
               <ul class="feeling-list" id="feelingSignals"></ul>
               <div class="feeling-section-title">조심할 점</div>
               <ul class="feeling-list" id="feelingCautions"></ul>
-              <div class="feeling-section-title">다음 톡 팁</div>
+              <div class="feeling-section-title">다음 추천</div>
               <p class="summary" id="feelingTip"></p>
             </div>
             <div class="error" id="feelingError"></div>
           </div>
         </article>
-
-        <article class="card locked" id="analysisCard">
-          <div class="card-head">
-            <span class="step-num">5</span>
-            <h2>말투 분석</h2>
-          </div>
-          <div class="card-body">
-            <button class="primary" id="analyzeBtn" disabled>말투 분석하기</button>
-            <p class="hint">내가 보낸 메시지만 모아서 분석합니다. 분석 결과는 이후 답장 생성에 재사용됩니다.</p>
-            <div class="analysis-box" id="analysisResult">
-              <p class="summary" id="styleSummary"></p>
-              <div class="tag-list" id="traitList"></div>
-            </div>
-            <div class="error" id="analysisError"></div>
-          </div>
-        </article>
-
-        <article class="card locked" id="moodCard">
-          <div class="card-head">
-            <span class="step-num">6</span>
-            <h2>원하는 분위기 선택</h2>
-          </div>
-          <div class="card-body">
-            <div class="pill-list" id="moodList"></div>
-            <input id="customMood" type="text" placeholder="직접 입력: 예) 너무 들뜨지 않게, 약간 미안한 느낌으로">
-          </div>
-        </article>
-
-        <article class="card locked" id="replyCard">
-          <div class="card-head">
-            <span class="step-num">7</span>
-            <h2>새 메시지에 답장 추천받기</h2>
-          </div>
-          <div class="card-body">
-            <div class="flow-panel" id="flowPanel">
-              <div class="flow-title">
-                <span>이어지는 대화</span>
-                <span id="flowCount">0/8</span>
-              </div>
-              <div class="flow-list" id="flowList"></div>
-            </div>
-            <textarea id="incomingMessage" placeholder="상대방의 다음 톡을 입력하세요. 예) 오늘 좀 힘들었어"></textarea>
-            <div class="row">
-              <button class="primary" id="replyBtn" disabled>답장 추천받기</button>
-              <button class="secondary" id="regenerateBtn" disabled>다른 답장 다시 뽑기</button>
-              <button class="secondary" id="resetFlowBtn" disabled>대화 흐름 초기화</button>
-            </div>
-            <div class="reply-list" id="replyList"></div>
-            <div class="error" id="replyError"></div>
-          </div>
-        </article>
       </div>
-
-      <aside class="card locked" id="previewCard">
-        <div class="card-head">
-          <span class="step-num">3</span>
-          <h2>최근 대화 미리보기</h2>
-        </div>
-        <div class="card-body">
-          <div class="preview" id="preview">
-            <p class="hint">내 이름을 선택하면 최근 대화가 채팅 버블로 표시됩니다.</p>
-          </div>
-        </div>
-      </aside>
     </section>
   </main>
 
@@ -735,23 +975,47 @@
       participants: [],
       me: "",
       styleProfile: null,
-      selectedMood: "평소 그대로",
+      selectedMood: "평소 답장",
       pingPong: [],
-      pendingIncoming: ""
+      pendingIncoming: "",
+      authToken: localStorage.getItem("talkReplyAuthToken") || "",
+      authRole: localStorage.getItem("talkReplyAuthRole") || ""
     };
 
-    const moods = ["평소 그대로", "다정하게", "장난스럽게", "단호하게", "공손하게", "시크하게", "위로하는 느낌"];
+    const moods = ["평소 답장", "재회", "썸/소개팅", "손절", "다정하게", "장난스럽게", "단호하게", "공손하게", "시크하게", "위로"];
     const systemPatterns = [
       /님이 들어왔습니다/,
       /님이 나갔습니다/,
       /님을 초대했습니다/,
-      /대화상대와 멀티프로필/,
+      /대화상대.*프로필/,
       /보이스톡|페이스톡/,
       /사진을 보냈습니다|동영상을 보냈습니다|파일을 보냈습니다/,
-      /^-+ \d{4}년 \d{1,2}월 \d{1,2}일 .+ -+$/
+      /^-+\s*\d{4}년\s*\d{1,2}월\s*\d{1,2}일.*-+$/
     ];
 
     const el = {
+      authScreen: document.querySelector("#authScreen"),
+      adminTab: document.querySelector("#adminTab"),
+      codeTab: document.querySelector("#codeTab"),
+      adminLoginForm: document.querySelector("#adminLoginForm"),
+      codeLoginForm: document.querySelector("#codeLoginForm"),
+      adminUsername: document.querySelector("#adminUsername"),
+      adminPassword: document.querySelector("#adminPassword"),
+      adminLoginBtn: document.querySelector("#adminLoginBtn"),
+      accessCode: document.querySelector("#accessCode"),
+      codeLoginBtn: document.querySelector("#codeLoginBtn"),
+      authError: document.querySelector("#authError"),
+      adminPanel: document.querySelector("#adminPanel"),
+      refreshAdminBtn: document.querySelector("#refreshAdminBtn"),
+      adminProvider: document.querySelector("#adminProvider"),
+      adminModel: document.querySelector("#adminModel"),
+      adminSessions: document.querySelector("#adminSessions"),
+      adminReplies: document.querySelector("#adminReplies"),
+      adminStyles: document.querySelector("#adminStyles"),
+      adminFeelings: document.querySelector("#adminFeelings"),
+      adminPasswordSet: document.querySelector("#adminPasswordSet"),
+      adminCodeSet: document.querySelector("#adminCodeSet"),
+      adminError: document.querySelector("#adminError"),
       chatInput: document.querySelector("#chatInput"),
       parseBtn: document.querySelector("#parseBtn"),
       fileBtn: document.querySelector("#fileBtn"),
@@ -760,8 +1024,6 @@
       participantCard: document.querySelector("#participantCard"),
       participantList: document.querySelector("#participantList"),
       parseMeta: document.querySelector("#parseMeta"),
-      previewCard: document.querySelector("#previewCard"),
-      preview: document.querySelector("#preview"),
       feelingCard: document.querySelector("#feelingCard"),
       interestBtn: document.querySelector("#interestBtn"),
       otherFeelingBtn: document.querySelector("#otherFeelingBtn"),
@@ -783,12 +1045,15 @@
       traitList: document.querySelector("#traitList"),
       moodCard: document.querySelector("#moodCard"),
       moodList: document.querySelector("#moodList"),
+      situationHint: document.querySelector("#situationHint"),
       customMood: document.querySelector("#customMood"),
       replyCard: document.querySelector("#replyCard"),
       incomingMessage: document.querySelector("#incomingMessage"),
       replyBtn: document.querySelector("#replyBtn"),
       regenerateBtn: document.querySelector("#regenerateBtn"),
       resetFlowBtn: document.querySelector("#resetFlowBtn"),
+      strategyBox: document.querySelector("#strategyBox"),
+      strategyText: document.querySelector("#strategyText"),
       replyList: document.querySelector("#replyList"),
       flowPanel: document.querySelector("#flowPanel"),
       flowList: document.querySelector("#flowList"),
@@ -797,6 +1062,23 @@
       status: document.querySelector("#status")
     };
 
+    document.querySelector(".brand h1").textContent = "말투 감정 코치";
+    document.querySelector(".subtitle").textContent =
+      "카톡 대화를 바탕으로 내 말투와 상대 흐름을 읽고, 지금 보내기 좋은 답장을 추천해요.";
+    el.status.textContent = "대화를 넣고 내 이름을 선택하면 말투와 상황을 함께 분석합니다.";
+    document.querySelector("#moodCard h2").textContent = "지금 상황 선택";
+    el.customMood.placeholder = "직접 입력: 너무 무겁지 않게, 다시 연락하고 싶은 느낌, 깔끔하게 선 긋기";
+
+    el.adminTab.addEventListener("click", () => showLoginMode("admin"));
+    el.codeTab.addEventListener("click", () => showLoginMode("code"));
+    el.adminLoginBtn.addEventListener("click", loginAsAdmin);
+    el.codeLoginBtn.addEventListener("click", loginWithCode);
+    el.adminPassword.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") loginAsAdmin();
+    });
+    el.accessCode.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") loginWithCode();
+    });
     el.parseBtn.addEventListener("click", parseConversation);
     el.fileBtn.addEventListener("click", () => el.fileInput.click());
     el.fileInput.addEventListener("change", importChatFile);
@@ -807,13 +1089,143 @@
     el.replyBtn.addEventListener("click", generateReplies);
     el.regenerateBtn.addEventListener("click", generateReplies);
     el.resetFlowBtn.addEventListener("click", resetFlow);
+    el.refreshAdminBtn.addEventListener("click", loadAdminStatus);
 
     renderMoods();
+    checkSavedSession();
 
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
         navigator.serviceWorker.register("/sw.js").catch(() => {});
       });
+    }
+
+    function showLoginMode(mode) {
+      const isAdmin = mode === "admin";
+      el.adminTab.classList.toggle("active", isAdmin);
+      el.codeTab.classList.toggle("active", !isAdmin);
+      el.adminLoginForm.classList.toggle("hide", !isAdmin);
+      el.codeLoginForm.classList.toggle("hide", isAdmin);
+      clearError(el.authError);
+    }
+
+    async function checkSavedSession() {
+      if (!state.authToken) return;
+
+      try {
+        const response = await fetch("/api/session", {
+          headers: { Authorization: `Bearer ${state.authToken}` }
+        });
+        if (!response.ok) throw new Error("session expired");
+        const data = await response.json();
+        state.authRole = data.role || state.authRole;
+        unlockApp();
+      } catch (_) {
+        clearAuth();
+      }
+    }
+
+    async function loginAsAdmin() {
+      clearError(el.authError);
+      const username = el.adminUsername.value.trim();
+      const password = el.adminPassword.value;
+      if (!username || !password) {
+        showError(el.authError, "관리자 아이디와 비밀번호를 입력해주세요.");
+        return;
+      }
+
+      await login({
+        mode: "admin",
+        username,
+        password,
+        button: el.adminLoginBtn,
+        loadingText: "확인 중"
+      });
+    }
+
+    async function loginWithCode() {
+      clearError(el.authError);
+      const accessCode = el.accessCode.value.trim();
+      if (!accessCode) {
+        showError(el.authError, "이용코드를 입력해주세요.");
+        return;
+      }
+
+      await login({
+        mode: "code",
+        accessCode,
+        button: el.codeLoginBtn,
+        loadingText: "확인 중"
+      });
+    }
+
+    async function login(payload) {
+      const button = payload.button;
+      const label = button.textContent;
+      setButtonLoading(button, true, payload.loadingText);
+
+      try {
+        const response = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(formatApiError(data.error));
+
+        state.authToken = data.token;
+        state.authRole = data.role || "";
+        localStorage.setItem("talkReplyAuthToken", state.authToken);
+        localStorage.setItem("talkReplyAuthRole", state.authRole);
+        unlockApp();
+      } catch (error) {
+        showError(el.authError, error.message || "로그인 중 문제가 생겼습니다.");
+      } finally {
+        setButtonLoading(button, false, label);
+      }
+    }
+
+    function unlockApp() {
+      el.authScreen.classList.add("hide");
+      el.adminPanel.classList.toggle("show", state.authRole === "admin");
+      if (state.authRole === "admin") loadAdminStatus();
+      setStatus(state.authRole === "admin" ? "관리자로 로그인했습니다." : "이용코드로 로그인했습니다.");
+    }
+
+    function clearAuth() {
+      state.authToken = "";
+      state.authRole = "";
+      localStorage.removeItem("talkReplyAuthToken");
+      localStorage.removeItem("talkReplyAuthRole");
+      el.authScreen.classList.remove("hide");
+      el.adminPanel.classList.remove("show");
+    }
+
+    async function loadAdminStatus() {
+      if (state.authRole !== "admin") return;
+      clearError(el.adminError);
+      setButtonLoading(el.refreshAdminBtn, true, "확인 중");
+
+      try {
+        const response = await fetch("/api/admin/status", {
+          headers: { Authorization: `Bearer ${state.authToken}` }
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(formatApiError(data.error));
+
+        el.adminProvider.textContent = data.provider || "-";
+        el.adminModel.textContent = data.model || "-";
+        el.adminSessions.textContent = `${data.activeSessions || 0}명`;
+        el.adminReplies.textContent = `${data.usage?.generateReplies || 0}회`;
+        el.adminStyles.textContent = `${data.usage?.analyzeStyle || 0}회`;
+        el.adminFeelings.textContent = `${data.usage?.analyzeFeelings || 0}회`;
+        el.adminPasswordSet.textContent = data.hasAdminPassword ? "설정됨" : "미설정";
+        el.adminCodeSet.textContent = data.hasAccessCode ? "설정됨" : "미설정";
+      } catch (error) {
+        showError(el.adminError, error.message || "관리자 정보를 불러오지 못했습니다.");
+      } finally {
+        setButtonLoading(el.refreshAdminBtn, false, "새로고침");
+      }
     }
 
     function parseConversation() {
@@ -834,7 +1246,7 @@
       }
 
       if (parsed.messages.length < 2) {
-        showError(el.parseError, "읽을 수 있는 메시지가 너무 적습니다. 시스템 메시지가 아닌 실제 대화를 포함해주세요.");
+        showError(el.parseError, "읽을 수 있는 메시지가 너무 적습니다. 실제 대화 내용을 포함해주세요.");
         return;
       }
 
@@ -849,20 +1261,28 @@
       unlock(el.participantCard);
       renderParticipants();
       el.parseMeta.textContent = `${parsed.messages.length}개 메시지, 참여자 ${parsed.participants.length}명을 찾았습니다.`;
-      setStatus("파싱 완료. 이제 내 이름을 선택해주세요.");
+      setStatus("분석 준비 완료. 이제 내 이름을 선택해주세요.");
     }
 
     function parseKakaoText(text) {
       const lines = text.replace(/\uFEFF/g, "").split(/\r?\n/);
       const messages = [];
       const participants = new Set();
-      const pcPattern = /^(\d{4}년\s*\d{1,2}월\s*\d{1,2}일\s*(?:오전|오후)?\s*\d{1,2}:\d{2}),\s*([^:]+?)\s*:\s?(.*)$/;
-      const mobilePattern = /^\[([^\]]+)\]\s*\[(오전|오후)?\s*\d{1,2}:\d{2}\]\s?(.*)$/;
+      const pcPattern = /^(\d{4}\uB144\s*\d{1,2}\uC6D4\s*\d{1,2}\uC77C\s*(?:\uC624\uC804|\uC624\uD6C4)?\s*\d{1,2}:\d{2}),\s*([^:]+?)\s*:\s?(.*)$/;
+      const mobilePattern = /^\[([^\]]+)\]\s*\[(?:\uC624\uC804|\uC624\uD6C4)?\s*\d{1,2}:\d{2}\]\s?(.*)$/;
+      const dateLinePattern = /^-+\s*(\d{4}\uB144\s*\d{1,2}\uC6D4\s*\d{1,2}\uC77C).*-+$/;
       let current = null;
+      let currentDateKey = "";
       let matched = 0;
 
       for (const rawLine of lines) {
         const line = rawLine.replace(/\s+$/g, "");
+        const dateLine = line.match(dateLinePattern);
+        if (dateLine) {
+          currentDateKey = parseKoreanDateKey(dateLine[1]) || currentDateKey;
+          continue;
+        }
+
         const pc = line.match(pcPattern);
         const mobile = line.match(mobilePattern);
 
@@ -871,8 +1291,9 @@
           matched += 1;
 
           const sender = (pc ? pc[2] : mobile[1]).trim();
-          const content = (pc ? pc[3] : mobile[3]).trim();
-          current = { sender, text: content };
+          const content = (pc ? pc[3] : mobile[2]).trim();
+          const dateKey = pc ? parseKoreanDateKey(pc[1]) : currentDateKey;
+          current = { sender, text: content, dateKey };
           continue;
         }
 
@@ -892,7 +1313,7 @@
 
         const textValue = current.text.trim();
         if (current.sender && textValue && !isSystemMessage(textValue)) {
-          messages.push({ sender: current.sender, text: textValue });
+          messages.push({ sender: current.sender, text: textValue, dateKey: current.dateKey || "" });
           participants.add(current.sender);
         }
         current = null;
@@ -913,9 +1334,38 @@
     function isIgnorableLine(line) {
       const trimmed = line.trim();
       if (!trimmed) return true;
-      if (/^-+ \d{4}년 \d{1,2}월 \d{1,2}일 .+ -+$/.test(trimmed)) return true;
-      if (/^\d{4}년 \d{1,2}월 \d{1,2}일 .+ 대화$/.test(trimmed)) return true;
+      if (/^-+\s*\d{4}년\s*\d{1,2}월\s*\d{1,2}일.*-+$/.test(trimmed)) return true;
+      if (/^\d{4}년\s*\d{1,2}월\s*\d{1,2}일.*대화/.test(trimmed)) return true;
       return false;
+    }
+
+    function parseKoreanDateKey(value) {
+      const match = String(value || "").match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/);
+      if (!match) return "";
+
+      const year = Number(match[1]);
+      const month = Number(match[2]);
+      const day = Number(match[3]);
+      if (!year || !month || !day) return "";
+
+      return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    }
+
+    function getRecentMessages(messages, limit = 150) {
+      const dated = messages.filter((message) => message.dateKey);
+      let scoped = messages;
+
+      if (dated.length) {
+        const latestTime = Math.max(...dated.map((message) => new Date(`${message.dateKey}T00:00:00`).getTime()));
+        const fromTime = latestTime - 29 * 24 * 60 * 60 * 1000;
+        scoped = messages.filter((message) => {
+          if (!message.dateKey) return false;
+          const time = new Date(`${message.dateKey}T00:00:00`).getTime();
+          return time >= fromTime && time <= latestTime;
+        });
+      }
+
+      return scoped.slice(-limit);
     }
 
     function isSystemMessage(text) {
@@ -942,7 +1392,6 @@
         button.classList.toggle("active", button.textContent === name);
       });
 
-      unlock(el.previewCard);
       unlock(el.feelingCard);
       unlock(el.analysisCard);
       el.interestBtn.disabled = false;
@@ -953,7 +1402,6 @@
       el.analysisResult.classList.remove("show");
       clearError(el.feelingError);
       clearError(el.analysisError);
-      renderPreview();
       lock(el.moodCard);
       lock(el.replyCard);
       el.replyBtn.disabled = true;
@@ -967,29 +1415,10 @@
       setStatus(`${name}님의 메시지 ${mineCount}개를 찾았습니다. 말투 분석을 진행할 수 있습니다.`);
     }
 
-    function renderPreview() {
-      el.preview.innerHTML = "";
-      state.messages.slice(-36).forEach((message) => {
-        const row = document.createElement("div");
-        row.className = `bubble-row ${message.sender === state.me ? "mine" : ""}`;
-
-        const sender = document.createElement("div");
-        sender.className = "sender";
-        sender.textContent = message.sender === state.me ? "나" : message.sender;
-
-        const bubble = document.createElement("div");
-        bubble.className = "bubble";
-        bubble.textContent = message.text;
-
-        row.append(sender, bubble);
-        el.preview.append(row);
-      });
-    }
-
     async function analyzeFeeling(mode) {
       clearError(el.feelingError);
       if (!state.me || state.messages.length < 4) {
-        showError(el.feelingError, "먼저 대화를 파싱하고 내 이름을 선택해주세요.");
+        showError(el.feelingError, "먼저 대화를 분석하고 내 이름을 선택해주세요.");
         return;
       }
 
@@ -997,13 +1426,13 @@
       buttons.forEach((button) => {
         button.disabled = true;
       });
-      setStatus("대화에 드러난 감정 신호를 조심스럽게 분석하고 있습니다.");
+      setStatus("대화에 드러난 감정 신호를 보수적으로 분석하고 있습니다.");
 
       try {
         const data = await apiPost("/api/analyze-feelings", {
           mode,
           me: state.me,
-          messages: state.messages
+          messages: getRecentMessages(state.messages)
         });
         renderFeeling(data);
         setStatus("마음 분석을 완료했습니다. 결과는 참고용으로만 봐주세요.");
@@ -1040,7 +1469,8 @@
 
     async function analyzeStyle() {
       clearError(el.analysisError);
-      const myMessages = state.messages
+      const recentMessages = getRecentMessages(state.messages);
+      const myMessages = recentMessages
         .filter((message) => message.sender === state.me)
         .map((message) => message.text)
         .filter(Boolean);
@@ -1060,7 +1490,7 @@
         unlock(el.moodCard);
         unlock(el.replyCard);
         el.replyBtn.disabled = false;
-        setStatus("말투 분석 완료. 이제 분위기와 새 메시지를 넣고 답장을 받아보세요.");
+        setStatus("말투 분석 완료. 이제 상황과 새 메시지를 넣고 답장을 받아보세요.");
       } catch (error) {
         showError(el.analysisError, error.message);
         setStatus("말투 분석 중 문제가 생겼습니다.");
@@ -1094,11 +1524,27 @@
         });
         el.moodList.append(button);
       });
+      el.situationHint.textContent = getSituationHint(state.selectedMood);
+    }
+
+    function getSituationHint(mood) {
+      if (mood.includes("재회")) {
+        return "예전 대화 흐름을 보고 부담을 줄인 재접근 루트를 제안합니다. 가능성이 낮으면 가장 자연스러운 관계 회복 대안을 추천합니다.";
+      }
+      if (mood.includes("썸") || mood.includes("소개팅")) {
+        return "상대 반응 온도에 맞춰 너무 들이대지 않으면서 호감도를 높이는 답장을 추천합니다.";
+      }
+      if (mood.includes("손절")) {
+        return "상처를 최소화하면서 선을 긋거나 대화를 정리하는 답장을 추천합니다.";
+      }
+      return "내 말투를 유지하면서 선택한 분위기에 맞는 카톡 답장을 추천합니다.";
     }
 
     async function generateReplies() {
       clearError(el.replyError);
       el.replyList.innerHTML = "";
+      el.strategyBox.classList.remove("show");
+      el.strategyText.textContent = "";
 
       if (!state.styleProfile) {
         showError(el.replyError, "먼저 말투 분석을 완료해주세요.");
@@ -1114,7 +1560,7 @@
       setButtonLoading(el.replyBtn, true, "추천 중");
       el.regenerateBtn.disabled = true;
       el.resetFlowBtn.disabled = state.pingPong.length === 0;
-      setStatus("말투와 선택한 분위기를 반영해 답장을 만들고 있습니다.");
+      setStatus("말투와 선택한 상황을 반영해 답장을 만들고 있습니다.");
 
       try {
         const data = await apiPost("/api/generate-replies", {
@@ -1122,10 +1568,10 @@
           mood: state.selectedMood,
           customMood: el.customMood.value,
           incomingMessage,
-          conversationContext: state.pingPong
+          conversationContext: state.pingPong.slice(-6)
         });
         state.pendingIncoming = incomingMessage;
-        renderReplies(data.replies);
+        renderReplies(data.replies, data.strategy_summary);
         el.regenerateBtn.disabled = false;
         el.resetFlowBtn.disabled = state.pingPong.length === 0;
         setStatus("답장 후보 3개를 만들었습니다. 마음에 드는 답장은 '이걸로 답장'을 눌러 이어가세요.");
@@ -1137,8 +1583,10 @@
       }
     }
 
-    function renderReplies(replies) {
+    function renderReplies(replies, strategySummary = "") {
       el.replyList.innerHTML = "";
+      el.strategyText.textContent = strategySummary || "현재 흐름을 보고 가장 부담이 적은 답장 방향으로 추천했습니다.";
+      el.strategyBox.classList.add("show");
       replies.forEach((reply) => {
         const item = document.createElement("div");
         item.className = "reply";
@@ -1189,13 +1637,15 @@
       }
 
       state.pingPong.push({ role: "me", text: reply });
-      state.pingPong = state.pingPong.slice(-8);
+      state.pingPong = state.pingPong.slice(-6);
       state.pendingIncoming = "";
 
       renderFlow();
       el.replyList.innerHTML = "";
+      el.strategyBox.classList.remove("show");
+      el.strategyText.textContent = "";
       el.incomingMessage.value = "";
-      el.incomingMessage.placeholder = "상대가 이어서 보낸 톡을 입력하세요. 예) 오 고마워 ㅋㅋ";
+      el.incomingMessage.placeholder = "상대가 이어서 보낸 톡을 입력하세요. 예: 아 고마워ㅋㅋ";
       el.regenerateBtn.disabled = true;
       el.resetFlowBtn.disabled = false;
       setStatus("내 답장을 대화 흐름에 넣었습니다. 상대의 다음 톡을 입력하면 이어서 추천할게요.");
@@ -1203,7 +1653,7 @@
 
     function renderFlow() {
       el.flowList.innerHTML = "";
-      el.flowCount.textContent = `${state.pingPong.length}/8`;
+      el.flowCount.textContent = `${state.pingPong.length}/6`;
       el.flowPanel.classList.toggle("show", state.pingPong.length > 0);
 
       state.pingPong.forEach((turn) => {
@@ -1227,6 +1677,8 @@
       state.pingPong = [];
       state.pendingIncoming = "";
       el.replyList.innerHTML = "";
+      el.strategyBox.classList.remove("show");
+      el.strategyText.textContent = "";
       el.incomingMessage.value = "";
       el.regenerateBtn.disabled = true;
       el.resetFlowBtn.disabled = true;
@@ -1239,7 +1691,10 @@
       try {
         response = await fetch(url, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${state.authToken}`
+          },
           body: JSON.stringify(payload)
         });
       } catch (_) {
@@ -1254,6 +1709,7 @@
       }
 
       if (!response.ok) {
+        if (response.status === 401) clearAuth();
         throw new Error(formatApiError(data.error));
       }
 
@@ -1268,6 +1724,8 @@
         network_error: "외부 API 연결",
         api_error: "API 오류",
         json_parse_error: "JSON 파싱 오류",
+        auth_error: "로그인 필요",
+        auth_config_error: "로그인 설정",
         server_error: "서버 오류"
       }[error.type] || "오류";
       return `${prefix}: ${error.message}`;
@@ -1311,8 +1769,7 @@
       state.pingPong = [];
       state.pendingIncoming = "";
       el.participantList.innerHTML = "";
-      el.preview.innerHTML = '<p class="hint">내 이름을 선택하면 최근 대화가 채팅 버블로 표시됩니다.</p>';
-      el.parseMeta.textContent = "아직 파싱된 대화가 없습니다.";
+      el.parseMeta.textContent = "아직 분석된 대화가 없습니다.";
       el.analysisResult.classList.remove("show");
       el.feelingResult.classList.remove("show");
       el.replyList.innerHTML = "";
@@ -1325,7 +1782,6 @@
       el.otherFeelingBtn.disabled = true;
       el.myFeelingBtn.disabled = true;
       lock(el.participantCard);
-      lock(el.previewCard);
       lock(el.feelingCard);
       lock(el.analysisCard);
       lock(el.moodCard);
@@ -1365,3 +1821,4 @@
   </script>
 </body>
 </html>
+
