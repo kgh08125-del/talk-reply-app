@@ -1,0 +1,1168 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#7c3aed">
+  <title>말투 답장 추천</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" href="/icons/icon-192.png">
+  <style>
+    :root {
+      --bg: #f6f0d7;
+      --surface: #ffffff;
+      --surface-soft: #fffdf4;
+      --ink: #241f16;
+      --muted: #766d58;
+      --line: #eadfbf;
+      --accent: #fee500;
+      --accent-dark: #2d2414;
+      --accent-soft: #fff5a8;
+      --mine: #fee500;
+      --theirs: #ffffff;
+      --chat-bg: #bacee0;
+      --danger-bg: #fff1f2;
+      --danger: #be123c;
+      --ok: #0f766e;
+      --shadow: 0 18px 42px rgba(66, 51, 22, 0.14);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(254, 229, 0, 0.42), transparent 24rem),
+        linear-gradient(180deg, #fff9d6 0%, var(--bg) 100%);
+      color: var(--ink);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+
+    button,
+    textarea,
+    input,
+    select {
+      font: inherit;
+      letter-spacing: 0;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .app {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 32px 0 56px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 22px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo {
+      display: grid;
+      place-items: center;
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: var(--accent);
+      color: #251f14;
+      box-shadow: 0 12px 28px rgba(162, 135, 0, 0.24);
+      font-weight: 900;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 5vw, 48px);
+      line-height: 1.02;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.55;
+      max-width: 620px;
+    }
+
+    .status {
+      min-width: min(100%, 260px);
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.82);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .card-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 18px 18px 12px;
+    }
+
+    .step-num {
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+      font-weight: 800;
+      font-size: 14px;
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    .card-body {
+      padding: 0 18px 18px;
+    }
+
+    textarea,
+    input {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      color: var(--ink);
+      outline: none;
+      resize: vertical;
+      transition: border-color 0.16s, box-shadow 0.16s, background 0.16s;
+    }
+
+    textarea {
+      min-height: 220px;
+      padding: 14px;
+      line-height: 1.55;
+    }
+
+    input {
+      min-height: 44px;
+      padding: 0 13px;
+    }
+
+    textarea:focus,
+    input:focus {
+      border-color: var(--accent);
+      background: white;
+      box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.12);
+    }
+
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-top: 12px;
+    }
+
+    .primary,
+    .secondary,
+    .copy-btn {
+      min-height: 42px;
+      border-radius: 8px;
+      padding: 0 15px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .primary {
+      background: var(--accent);
+      color: #241f16;
+      box-shadow: 0 10px 22px rgba(162, 135, 0, 0.23);
+    }
+
+    .secondary,
+    .copy-btn {
+      border: 1px solid var(--line);
+      background: white;
+      color: var(--accent-dark);
+    }
+
+    .hint {
+      margin: 10px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .error {
+      display: none;
+      margin-top: 12px;
+      border-radius: 8px;
+      padding: 12px 13px;
+      background: var(--danger-bg);
+      color: var(--danger);
+      line-height: 1.45;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .error.show {
+      display: block;
+    }
+
+    .participant-list,
+    .pill-list,
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
+    .pill {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0 14px;
+      background: white;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .pill.active {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #241f16;
+    }
+
+    .preview {
+      display: grid;
+      gap: 10px;
+      max-height: 480px;
+      overflow: auto;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--chat-bg);
+    }
+
+    .bubble-row {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+    }
+
+    .bubble-row.mine {
+      align-items: flex-end;
+    }
+
+    .sender {
+      padding: 0 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .bubble {
+      max-width: min(76%, 560px);
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--theirs);
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .mine .bubble {
+      border-color: transparent;
+      background: var(--mine);
+      color: #241f16;
+    }
+
+    .analysis-box {
+      display: none;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      padding: 14px;
+    }
+
+    .analysis-box.show {
+      display: block;
+    }
+
+    .summary {
+      margin: 0 0 12px;
+      line-height: 1.55;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 30px;
+      border-radius: 999px;
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+      padding: 0 11px;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .reply-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .reply {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: white;
+      padding: 12px;
+    }
+
+    .reply-text {
+      line-height: 1.5;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .flow-panel {
+      display: none;
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--chat-bg);
+      padding: 12px;
+    }
+
+    .flow-panel.show {
+      display: block;
+    }
+
+    .flow-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      color: #24364a;
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .flow-list {
+      display: grid;
+      gap: 8px;
+      max-height: 260px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .flow-turn {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 3px;
+    }
+
+    .flow-turn.me {
+      align-items: flex-end;
+    }
+
+    .flow-speaker {
+      color: rgba(36, 54, 74, 0.72);
+      font-size: 11px;
+      font-weight: 800;
+      padding: 0 5px;
+    }
+
+    .flow-text {
+      max-width: 82%;
+      border-radius: 8px;
+      background: white;
+      padding: 9px 11px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .flow-turn.me .flow-text {
+      background: var(--accent);
+    }
+
+    .reply-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .use-btn {
+      min-height: 38px;
+      border-radius: 8px;
+      padding: 0 12px;
+      background: #241f16;
+      color: white;
+      font-weight: 900;
+    }
+
+    .locked {
+      opacity: 0.64;
+    }
+
+    .loading::after {
+      content: "";
+      display: inline-block;
+      width: 1em;
+      text-align: left;
+      animation: dots 1.1s steps(4, end) infinite;
+    }
+
+    @keyframes dots {
+      0%, 20% { content: ""; }
+      40% { content: "."; }
+      60% { content: ".."; }
+      80%, 100% { content: "..."; }
+    }
+
+    @media (max-width: 860px) {
+      .app {
+        width: min(100% - 22px, 680px);
+        padding-top: 22px;
+      }
+
+      .topbar,
+      .grid {
+        grid-template-columns: 1fr;
+        display: grid;
+      }
+
+      .topbar {
+        align-items: stretch;
+      }
+
+      .status {
+        min-width: 0;
+      }
+
+      .card-head,
+      .card-body {
+        padding-left: 14px;
+        padding-right: 14px;
+      }
+
+      textarea {
+        min-height: 190px;
+      }
+
+      .reply {
+        grid-template-columns: 1fr;
+      }
+
+      .copy-btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">톡</div>
+        <div>
+          <h1>내 말투 톡답장</h1>
+          <p class="subtitle">카카오톡 대화를 붙여넣고 내 말투를 익힌 뒤, 상대 메시지에 자연스럽게 이어지는 답장을 받아보세요.</p>
+        </div>
+      </div>
+      <div class="status" id="status">대화 txt를 붙여넣으면 참여자와 최근 대화를 먼저 정리합니다.</div>
+    </header>
+
+    <section class="grid">
+      <div class="stack">
+        <article class="card">
+          <div class="card-head">
+            <span class="step-num">1</span>
+            <h2>카카오톡 대화 붙여넣기</h2>
+          </div>
+          <div class="card-body">
+            <textarea id="chatInput" placeholder="예:&#10;2026년 7월 5일 오후 9:12, 지민 : 오늘 뭐해?&#10;2026년 7월 5일 오후 9:13, 나 : 집 가는 중ㅋㅋ&#10;&#10;또는&#10;[지민] [오후 9:12] 오늘 뭐해?&#10;[나] [오후 9:13] 집 가는 중ㅋㅋ"></textarea>
+            <div class="row">
+              <button class="primary" id="parseBtn">분석 시작하기</button>
+              <button class="secondary" id="sampleBtn">대화 붙여넣기</button>
+            </div>
+            <p class="hint">PC 형식과 모바일 형식을 모두 처리합니다. 입장/퇴장/날짜 구분선 같은 시스템 메시지는 제외합니다.</p>
+            <div class="error" id="parseError"></div>
+          </div>
+        </article>
+
+        <article class="card locked" id="participantCard">
+          <div class="card-head">
+            <span class="step-num">2</span>
+            <h2>내 이름 선택</h2>
+          </div>
+          <div class="card-body">
+            <div class="participant-list" id="participantList"></div>
+            <p class="hint" id="parseMeta">아직 파싱된 대화가 없습니다.</p>
+          </div>
+        </article>
+
+        <article class="card locked" id="analysisCard">
+          <div class="card-head">
+            <span class="step-num">4</span>
+            <h2>말투 분석</h2>
+          </div>
+          <div class="card-body">
+            <button class="primary" id="analyzeBtn" disabled>말투 분석하기</button>
+            <p class="hint">내가 보낸 메시지만 모아서 분석합니다. 분석 결과는 이후 답장 생성에 재사용됩니다.</p>
+            <div class="analysis-box" id="analysisResult">
+              <p class="summary" id="styleSummary"></p>
+              <div class="tag-list" id="traitList"></div>
+            </div>
+            <div class="error" id="analysisError"></div>
+          </div>
+        </article>
+
+        <article class="card locked" id="moodCard">
+          <div class="card-head">
+            <span class="step-num">5</span>
+            <h2>원하는 분위기 선택</h2>
+          </div>
+          <div class="card-body">
+            <div class="pill-list" id="moodList"></div>
+            <input id="customMood" type="text" placeholder="직접 입력: 예) 너무 들뜨지 않게, 약간 미안한 느낌으로">
+          </div>
+        </article>
+
+        <article class="card locked" id="replyCard">
+          <div class="card-head">
+            <span class="step-num">6</span>
+            <h2>새 메시지에 답장 추천받기</h2>
+          </div>
+          <div class="card-body">
+            <div class="flow-panel" id="flowPanel">
+              <div class="flow-title">
+                <span>이어지는 대화</span>
+                <span id="flowCount">0/8</span>
+              </div>
+              <div class="flow-list" id="flowList"></div>
+            </div>
+            <textarea id="incomingMessage" placeholder="상대방의 다음 톡을 입력하세요. 예) 오늘 좀 힘들었어"></textarea>
+            <div class="row">
+              <button class="primary" id="replyBtn" disabled>답장 추천받기</button>
+              <button class="secondary" id="regenerateBtn" disabled>다른 답장 다시 뽑기</button>
+              <button class="secondary" id="resetFlowBtn" disabled>대화 흐름 초기화</button>
+            </div>
+            <div class="reply-list" id="replyList"></div>
+            <div class="error" id="replyError"></div>
+          </div>
+        </article>
+      </div>
+
+      <aside class="card locked" id="previewCard">
+        <div class="card-head">
+          <span class="step-num">3</span>
+          <h2>최근 대화 미리보기</h2>
+        </div>
+        <div class="card-body">
+          <div class="preview" id="preview">
+            <p class="hint">내 이름을 선택하면 최근 대화가 채팅 버블로 표시됩니다.</p>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const state = {
+      messages: [],
+      participants: [],
+      me: "",
+      styleProfile: null,
+      selectedMood: "평소 그대로",
+      pingPong: [],
+      pendingIncoming: ""
+    };
+
+    const moods = ["평소 그대로", "다정하게", "장난스럽게", "단호하게", "공손하게", "시크하게", "위로하는 느낌"];
+    const systemPatterns = [
+      /님이 들어왔습니다/,
+      /님이 나갔습니다/,
+      /님을 초대했습니다/,
+      /대화상대와 멀티프로필/,
+      /보이스톡|페이스톡/,
+      /사진을 보냈습니다|동영상을 보냈습니다|파일을 보냈습니다/,
+      /^-+ \d{4}년 \d{1,2}월 \d{1,2}일 .+ -+$/
+    ];
+
+    const el = {
+      chatInput: document.querySelector("#chatInput"),
+      parseBtn: document.querySelector("#parseBtn"),
+      sampleBtn: document.querySelector("#sampleBtn"),
+      parseError: document.querySelector("#parseError"),
+      participantCard: document.querySelector("#participantCard"),
+      participantList: document.querySelector("#participantList"),
+      parseMeta: document.querySelector("#parseMeta"),
+      previewCard: document.querySelector("#previewCard"),
+      preview: document.querySelector("#preview"),
+      analysisCard: document.querySelector("#analysisCard"),
+      analyzeBtn: document.querySelector("#analyzeBtn"),
+      analysisResult: document.querySelector("#analysisResult"),
+      analysisError: document.querySelector("#analysisError"),
+      styleSummary: document.querySelector("#styleSummary"),
+      traitList: document.querySelector("#traitList"),
+      moodCard: document.querySelector("#moodCard"),
+      moodList: document.querySelector("#moodList"),
+      customMood: document.querySelector("#customMood"),
+      replyCard: document.querySelector("#replyCard"),
+      incomingMessage: document.querySelector("#incomingMessage"),
+      replyBtn: document.querySelector("#replyBtn"),
+      regenerateBtn: document.querySelector("#regenerateBtn"),
+      resetFlowBtn: document.querySelector("#resetFlowBtn"),
+      replyList: document.querySelector("#replyList"),
+      flowPanel: document.querySelector("#flowPanel"),
+      flowList: document.querySelector("#flowList"),
+      flowCount: document.querySelector("#flowCount"),
+      replyError: document.querySelector("#replyError"),
+      status: document.querySelector("#status")
+    };
+
+    el.parseBtn.addEventListener("click", parseConversation);
+    el.sampleBtn.addEventListener("click", insertSample);
+    el.analyzeBtn.addEventListener("click", analyzeStyle);
+    el.replyBtn.addEventListener("click", generateReplies);
+    el.regenerateBtn.addEventListener("click", generateReplies);
+    el.resetFlowBtn.addEventListener("click", resetFlow);
+
+    renderMoods();
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js").catch(() => {});
+      });
+    }
+
+    function parseConversation() {
+      clearError(el.parseError);
+      resetAfterParse();
+
+      const text = el.chatInput.value.trim();
+      if (!text) {
+        showError(el.parseError, "대화 내용을 먼저 붙여넣어주세요.");
+        return;
+      }
+
+      const parsed = parseKakaoText(text);
+      if (parsed.errors.length) {
+        showError(el.parseError, parsed.errors[0]);
+        setStatus("대화 형식을 읽지 못했습니다. 예시 형식과 비슷한지 확인해주세요.");
+        return;
+      }
+
+      if (parsed.messages.length < 2) {
+        showError(el.parseError, "읽을 수 있는 메시지가 너무 적습니다. 시스템 메시지가 아닌 실제 대화를 포함해주세요.");
+        return;
+      }
+
+      if (parsed.participants.length < 2) {
+        showError(el.parseError, "참여자를 2명 이상 찾지 못했습니다. 이름과 메시지가 포함된 내보내기 txt인지 확인해주세요.");
+        return;
+      }
+
+      state.messages = parsed.messages;
+      state.participants = parsed.participants;
+
+      unlock(el.participantCard);
+      renderParticipants();
+      el.parseMeta.textContent = `${parsed.messages.length}개 메시지, 참여자 ${parsed.participants.length}명을 찾았습니다.`;
+      setStatus("파싱 완료. 이제 내 이름을 선택해주세요.");
+    }
+
+    function parseKakaoText(text) {
+      const lines = text.replace(/\uFEFF/g, "").split(/\r?\n/);
+      const messages = [];
+      const participants = new Set();
+      const pcPattern = /^(\d{4}년\s*\d{1,2}월\s*\d{1,2}일\s*(?:오전|오후)?\s*\d{1,2}:\d{2}),\s*([^:]+?)\s*:\s?(.*)$/;
+      const mobilePattern = /^\[([^\]]+)\]\s*\[(오전|오후)?\s*\d{1,2}:\d{2}\]\s?(.*)$/;
+      let current = null;
+      let matched = 0;
+
+      for (const rawLine of lines) {
+        const line = rawLine.replace(/\s+$/g, "");
+        const pc = line.match(pcPattern);
+        const mobile = line.match(mobilePattern);
+
+        if (pc || mobile) {
+          flush();
+          matched += 1;
+
+          const sender = (pc ? pc[2] : mobile[1]).trim();
+          const content = (pc ? pc[3] : mobile[3]).trim();
+          current = { sender, text: content };
+          continue;
+        }
+
+        if (isIgnorableLine(line)) {
+          continue;
+        }
+
+        if (current) {
+          current.text += current.text ? `\n${line}` : line;
+        }
+      }
+
+      flush();
+
+      function flush() {
+        if (!current) return;
+
+        const textValue = current.text.trim();
+        if (current.sender && textValue && !isSystemMessage(textValue)) {
+          messages.push({ sender: current.sender, text: textValue });
+          participants.add(current.sender);
+        }
+        current = null;
+      }
+
+      const errors = [];
+      if (!matched) {
+        errors.push('지원하는 형식의 메시지를 찾지 못했습니다. "2026년 7월 5일 오후 9:12, 이름 : 메시지" 또는 "[이름] [오후 9:12] 메시지" 형식인지 확인해주세요.');
+      }
+
+      return {
+        messages,
+        participants: Array.from(participants).sort((a, b) => a.localeCompare(b, "ko")),
+        errors
+      };
+    }
+
+    function isIgnorableLine(line) {
+      const trimmed = line.trim();
+      if (!trimmed) return true;
+      if (/^-+ \d{4}년 \d{1,2}월 \d{1,2}일 .+ -+$/.test(trimmed)) return true;
+      if (/^\d{4}년 \d{1,2}월 \d{1,2}일 .+ 대화$/.test(trimmed)) return true;
+      return false;
+    }
+
+    function isSystemMessage(text) {
+      return systemPatterns.some((pattern) => pattern.test(text.trim()));
+    }
+
+    function renderParticipants() {
+      el.participantList.innerHTML = "";
+      state.participants.forEach((name) => {
+        const button = document.createElement("button");
+        button.className = "pill";
+        button.type = "button";
+        button.textContent = name;
+        button.addEventListener("click", () => selectMe(name));
+        el.participantList.append(button);
+      });
+    }
+
+    function selectMe(name) {
+      state.me = name;
+      state.styleProfile = null;
+
+      document.querySelectorAll("#participantList .pill").forEach((button) => {
+        button.classList.toggle("active", button.textContent === name);
+      });
+
+      unlock(el.previewCard);
+      unlock(el.analysisCard);
+      el.analyzeBtn.disabled = false;
+      el.analysisResult.classList.remove("show");
+      clearError(el.analysisError);
+      renderPreview();
+      lock(el.moodCard);
+      lock(el.replyCard);
+      el.replyBtn.disabled = true;
+      el.regenerateBtn.disabled = true;
+      el.resetFlowBtn.disabled = true;
+      state.pingPong = [];
+      state.pendingIncoming = "";
+      renderFlow();
+
+      const mineCount = state.messages.filter((message) => message.sender === state.me).length;
+      setStatus(`${name}님의 메시지 ${mineCount}개를 찾았습니다. 말투 분석을 진행할 수 있습니다.`);
+    }
+
+    function renderPreview() {
+      el.preview.innerHTML = "";
+      state.messages.slice(-36).forEach((message) => {
+        const row = document.createElement("div");
+        row.className = `bubble-row ${message.sender === state.me ? "mine" : ""}`;
+
+        const sender = document.createElement("div");
+        sender.className = "sender";
+        sender.textContent = message.sender === state.me ? "나" : message.sender;
+
+        const bubble = document.createElement("div");
+        bubble.className = "bubble";
+        bubble.textContent = message.text;
+
+        row.append(sender, bubble);
+        el.preview.append(row);
+      });
+    }
+
+    async function analyzeStyle() {
+      clearError(el.analysisError);
+      const myMessages = state.messages
+        .filter((message) => message.sender === state.me)
+        .map((message) => message.text)
+        .filter(Boolean);
+
+      if (myMessages.length < 5) {
+        showError(el.analysisError, "말투를 분석하려면 내가 보낸 메시지가 최소 5개 이상 필요합니다.");
+        return;
+      }
+
+      setButtonLoading(el.analyzeBtn, true, "분석 중");
+      setStatus("내 메시지만 모아서 말투를 분석하고 있습니다.");
+
+      try {
+        const data = await apiPost("/api/analyze-style", { messages: myMessages });
+        state.styleProfile = data;
+        renderAnalysis(data);
+        unlock(el.moodCard);
+        unlock(el.replyCard);
+        el.replyBtn.disabled = false;
+        setStatus("말투 분석 완료. 이제 분위기와 새 메시지를 넣고 답장을 받아보세요.");
+      } catch (error) {
+        showError(el.analysisError, error.message);
+        setStatus("말투 분석 중 문제가 생겼습니다.");
+      } finally {
+        setButtonLoading(el.analyzeBtn, false, "말투 분석하기");
+      }
+    }
+
+    function renderAnalysis(profile) {
+      el.styleSummary.textContent = profile.style_summary;
+      el.traitList.innerHTML = "";
+      profile.traits.forEach((trait) => {
+        const tag = document.createElement("span");
+        tag.className = "tag";
+        tag.textContent = trait;
+        el.traitList.append(tag);
+      });
+      el.analysisResult.classList.add("show");
+    }
+
+    function renderMoods() {
+      el.moodList.innerHTML = "";
+      moods.forEach((mood) => {
+        const button = document.createElement("button");
+        button.className = `pill ${mood === state.selectedMood ? "active" : ""}`;
+        button.type = "button";
+        button.textContent = mood;
+        button.addEventListener("click", () => {
+          state.selectedMood = mood;
+          renderMoods();
+        });
+        el.moodList.append(button);
+      });
+    }
+
+    async function generateReplies() {
+      clearError(el.replyError);
+      el.replyList.innerHTML = "";
+
+      if (!state.styleProfile) {
+        showError(el.replyError, "먼저 말투 분석을 완료해주세요.");
+        return;
+      }
+
+      const incomingMessage = el.incomingMessage.value.trim();
+      if (!incomingMessage) {
+        showError(el.replyError, "상대방의 새 메시지를 입력해주세요.");
+        return;
+      }
+
+      setButtonLoading(el.replyBtn, true, "추천 중");
+      el.regenerateBtn.disabled = true;
+      el.resetFlowBtn.disabled = state.pingPong.length === 0;
+      setStatus("말투와 선택한 분위기를 반영해 답장을 만들고 있습니다.");
+
+      try {
+        const data = await apiPost("/api/generate-replies", {
+          styleProfile: state.styleProfile,
+          mood: state.selectedMood,
+          customMood: el.customMood.value,
+          incomingMessage,
+          conversationContext: state.pingPong
+        });
+        state.pendingIncoming = incomingMessage;
+        renderReplies(data.replies);
+        el.regenerateBtn.disabled = false;
+        el.resetFlowBtn.disabled = state.pingPong.length === 0;
+        setStatus("답장 후보 3개를 만들었습니다. 마음에 드는 답장은 '이걸로 답장'을 눌러 이어가세요.");
+      } catch (error) {
+        showError(el.replyError, error.message);
+        setStatus("답장 추천 중 문제가 생겼습니다.");
+      } finally {
+        setButtonLoading(el.replyBtn, false, "답장 추천받기");
+      }
+    }
+
+    function renderReplies(replies) {
+      el.replyList.innerHTML = "";
+      replies.forEach((reply) => {
+        const item = document.createElement("div");
+        item.className = "reply";
+
+        const text = document.createElement("div");
+        text.className = "reply-text";
+        text.textContent = reply;
+
+        const copy = document.createElement("button");
+        copy.className = "copy-btn";
+        copy.type = "button";
+        copy.textContent = "복사";
+        copy.addEventListener("click", async () => {
+          try {
+            await navigator.clipboard.writeText(reply);
+            copy.textContent = "복사됨";
+            setTimeout(() => {
+              copy.textContent = "복사";
+            }, 1200);
+          } catch (_) {
+            showError(el.replyError, "클립보드 복사에 실패했습니다. 답장 문장을 직접 선택해 복사해주세요.");
+          }
+        });
+
+        const use = document.createElement("button");
+        use.className = "use-btn";
+        use.type = "button";
+        use.textContent = "이걸로 답장";
+        use.addEventListener("click", () => useReply(reply));
+
+        const actions = document.createElement("div");
+        actions.className = "reply-actions";
+        actions.append(copy, use);
+
+        item.append(text, actions);
+        el.replyList.append(item);
+      });
+    }
+
+    function useReply(reply) {
+      clearError(el.replyError);
+
+      if (state.pendingIncoming) {
+        const lastTurn = state.pingPong[state.pingPong.length - 1];
+        if (!lastTurn || lastTurn.role !== "other" || lastTurn.text !== state.pendingIncoming) {
+          state.pingPong.push({ role: "other", text: state.pendingIncoming });
+        }
+      }
+
+      state.pingPong.push({ role: "me", text: reply });
+      state.pingPong = state.pingPong.slice(-8);
+      state.pendingIncoming = "";
+
+      renderFlow();
+      el.replyList.innerHTML = "";
+      el.incomingMessage.value = "";
+      el.incomingMessage.placeholder = "상대가 이어서 보낸 톡을 입력하세요. 예) 오 고마워 ㅋㅋ";
+      el.regenerateBtn.disabled = true;
+      el.resetFlowBtn.disabled = false;
+      setStatus("내 답장을 대화 흐름에 넣었습니다. 상대의 다음 톡을 입력하면 이어서 추천할게요.");
+    }
+
+    function renderFlow() {
+      el.flowList.innerHTML = "";
+      el.flowCount.textContent = `${state.pingPong.length}/8`;
+      el.flowPanel.classList.toggle("show", state.pingPong.length > 0);
+
+      state.pingPong.forEach((turn) => {
+        const row = document.createElement("div");
+        row.className = `flow-turn ${turn.role === "me" ? "me" : ""}`;
+
+        const speaker = document.createElement("div");
+        speaker.className = "flow-speaker";
+        speaker.textContent = turn.role === "me" ? "나" : "상대";
+
+        const text = document.createElement("div");
+        text.className = "flow-text";
+        text.textContent = turn.text;
+
+        row.append(speaker, text);
+        el.flowList.append(row);
+      });
+    }
+
+    function resetFlow() {
+      state.pingPong = [];
+      state.pendingIncoming = "";
+      el.replyList.innerHTML = "";
+      el.incomingMessage.value = "";
+      el.regenerateBtn.disabled = true;
+      el.resetFlowBtn.disabled = true;
+      renderFlow();
+      setStatus("이어지는 대화 흐름을 비웠습니다.");
+    }
+
+    async function apiPost(url, payload) {
+      let response;
+      try {
+        response = await fetch(url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+      } catch (_) {
+        throw new Error("네트워크 오류입니다. 로컬 서버가 실행 중인지 확인해주세요.");
+      }
+
+      let data;
+      try {
+        data = await response.json();
+      } catch (_) {
+        throw new Error("서버 응답을 JSON으로 읽지 못했습니다.");
+      }
+
+      if (!response.ok) {
+        throw new Error(formatApiError(data.error));
+      }
+
+      return data;
+    }
+
+    function formatApiError(error) {
+      if (!error) return "알 수 없는 오류가 발생했습니다.";
+      const prefix = {
+        validation_error: "입력 확인",
+        api_key_error: "API 키 설정",
+        network_error: "외부 API 연결",
+        api_error: "API 오류",
+        json_parse_error: "JSON 파싱 오류",
+        server_error: "서버 오류"
+      }[error.type] || "오류";
+      return `${prefix}: ${error.message}`;
+    }
+
+    function insertSample() {
+      el.chatInput.value = [
+        "2026년 7월 5일 오후 9:12, 지민 : 오늘 뭐해?",
+        "2026년 7월 5일 오후 9:13, 나 : 집 가는 중ㅋㅋ",
+        "2026년 7월 5일 오후 9:14, 지민 : 오 내일 시간 돼?",
+        "2026년 7월 5일 오후 9:15, 나 : 내일 저녁은 될 듯!",
+        "2026년 7월 5일 오후 9:16, 나 : 왜왜 무슨 일 있어?",
+        "2026년 7월 5일 오후 9:20, 지민 : 밥 먹자고 하려고",
+        "2026년 7월 5일 오후 9:21, 나 : 좋지ㅋㅋ 어디 갈까",
+        "2026년 7월 5일 오후 9:22, 지민 : 파스타?",
+        "2026년 7월 5일 오후 9:23, 나 : 오 좋아 나 파스타 완전 가능",
+        "2026년 7월 5일 오후 9:24, 나 : 예약 필요하면 내가 볼게"
+      ].join("\n");
+      parseConversation();
+    }
+
+    function resetAfterParse() {
+      state.messages = [];
+      state.participants = [];
+      state.me = "";
+      state.styleProfile = null;
+      state.pingPong = [];
+      state.pendingIncoming = "";
+      el.participantList.innerHTML = "";
+      el.preview.innerHTML = '<p class="hint">내 이름을 선택하면 최근 대화가 채팅 버블로 표시됩니다.</p>';
+      el.parseMeta.textContent = "아직 파싱된 대화가 없습니다.";
+      el.analysisResult.classList.remove("show");
+      el.replyList.innerHTML = "";
+      renderFlow();
+      el.analyzeBtn.disabled = true;
+      el.replyBtn.disabled = true;
+      el.regenerateBtn.disabled = true;
+      el.resetFlowBtn.disabled = true;
+      lock(el.participantCard);
+      lock(el.previewCard);
+      lock(el.analysisCard);
+      lock(el.moodCard);
+      lock(el.replyCard);
+      clearError(el.analysisError);
+      clearError(el.replyError);
+    }
+
+    function lock(node) {
+      node.classList.add("locked");
+    }
+
+    function unlock(node) {
+      node.classList.remove("locked");
+    }
+
+    function showError(node, message) {
+      node.textContent = message;
+      node.classList.add("show");
+    }
+
+    function clearError(node) {
+      node.textContent = "";
+      node.classList.remove("show");
+    }
+
+    function setStatus(message) {
+      el.status.textContent = message;
+    }
+
+    function setButtonLoading(button, isLoading, text) {
+      button.disabled = isLoading;
+      button.textContent = text;
+      button.classList.toggle("loading", isLoading);
+    }
+  </script>
+</body>
+</html>

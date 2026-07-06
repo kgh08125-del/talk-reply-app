@@ -1,0 +1,13 @@
+{
+  "name": "kakao-tone-reply-app",
+  "version": "1.0.0",
+  "description": "카카오톡 대화 기반 말투 분석 및 답장 추천 웹앱",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
