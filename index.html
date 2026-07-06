@@ -334,6 +334,72 @@
       display: block;
     }
 
+    .mini-actions {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .mini-actions .secondary {
+      width: 100%;
+      min-height: 46px;
+      white-space: normal;
+      line-height: 1.2;
+      padding: 8px 10px;
+    }
+
+    .score-wrap {
+      display: grid;
+      gap: 8px;
+      margin: 12px 0;
+    }
+
+    .score-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      font-weight: 900;
+    }
+
+    .score-bar {
+      height: 12px;
+      border-radius: 999px;
+      background: #efe5c4;
+      overflow: hidden;
+    }
+
+    .score-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #fee500, #ff9f1c);
+      transition: width 0.35s ease;
+    }
+
+    .feeling-section-title {
+      margin: 14px 0 8px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .feeling-list {
+      display: grid;
+      gap: 7px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .feeling-list li {
+      border-radius: 8px;
+      background: white;
+      border: 1px solid var(--line);
+      padding: 9px 10px;
+      line-height: 1.45;
+    }
+
     .summary {
       margin: 0 0 12px;
       line-height: 1.55;
@@ -515,6 +581,10 @@
       .copy-btn {
         width: 100%;
       }
+
+      .mini-actions {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
 </head>
@@ -542,9 +612,10 @@
             <textarea id="chatInput" placeholder="예:&#10;2026년 7월 5일 오후 9:12, 지민 : 오늘 뭐해?&#10;2026년 7월 5일 오후 9:13, 나 : 집 가는 중ㅋㅋ&#10;&#10;또는&#10;[지민] [오후 9:12] 오늘 뭐해?&#10;[나] [오후 9:13] 집 가는 중ㅋㅋ"></textarea>
             <div class="row">
               <button class="primary" id="parseBtn">분석 시작하기</button>
-              <button class="secondary" id="sampleBtn">대화 붙여넣기</button>
+              <button class="secondary" id="fileBtn">카톡 txt 불러오기</button>
+              <input id="fileInput" type="file" accept=".txt,text/plain" hidden>
             </div>
-            <p class="hint">PC 형식과 모바일 형식을 모두 처리합니다. 입장/퇴장/날짜 구분선 같은 시스템 메시지는 제외합니다.</p>
+            <p class="hint">카카오톡 대화 내보내기 txt 파일을 불러오거나, 내용을 직접 붙여넣을 수 있습니다. 입장/퇴장/날짜 구분선 같은 시스템 메시지는 제외합니다.</p>
             <div class="error" id="parseError"></div>
           </div>
         </article>
@@ -560,9 +631,41 @@
           </div>
         </article>
 
-        <article class="card locked" id="analysisCard">
+        <article class="card locked" id="feelingCard">
           <div class="card-head">
             <span class="step-num">4</span>
+            <h2>마음 분석</h2>
+          </div>
+          <div class="card-body">
+            <div class="mini-actions">
+              <button class="secondary" id="interestBtn" disabled>호감도 체크</button>
+              <button class="secondary" id="otherFeelingBtn" disabled>상대 마음 분석기</button>
+              <button class="secondary" id="myFeelingBtn" disabled>내 마음 분석기</button>
+            </div>
+            <p class="hint">대화에 드러난 신호를 바탕으로 조심스럽게 추정합니다. 실제 마음을 확정하는 기능은 아니에요.</p>
+            <div class="analysis-box" id="feelingResult">
+              <div class="score-head">
+                <span id="feelingTitle">호감도 체크</span>
+                <span id="feelingScore">0점</span>
+              </div>
+              <div class="score-wrap">
+                <div class="score-bar"><div class="score-fill" id="feelingFill"></div></div>
+              </div>
+              <p class="summary" id="feelingSummary"></p>
+              <div class="feeling-section-title">보이는 신호</div>
+              <ul class="feeling-list" id="feelingSignals"></ul>
+              <div class="feeling-section-title">조심할 점</div>
+              <ul class="feeling-list" id="feelingCautions"></ul>
+              <div class="feeling-section-title">다음 톡 팁</div>
+              <p class="summary" id="feelingTip"></p>
+            </div>
+            <div class="error" id="feelingError"></div>
+          </div>
+        </article>
+
+        <article class="card locked" id="analysisCard">
+          <div class="card-head">
+            <span class="step-num">5</span>
             <h2>말투 분석</h2>
           </div>
           <div class="card-body">
@@ -578,7 +681,7 @@
 
         <article class="card locked" id="moodCard">
           <div class="card-head">
-            <span class="step-num">5</span>
+            <span class="step-num">6</span>
             <h2>원하는 분위기 선택</h2>
           </div>
           <div class="card-body">
@@ -589,7 +692,7 @@
 
         <article class="card locked" id="replyCard">
           <div class="card-head">
-            <span class="step-num">6</span>
+            <span class="step-num">7</span>
             <h2>새 메시지에 답장 추천받기</h2>
           </div>
           <div class="card-body">
@@ -651,13 +754,27 @@
     const el = {
       chatInput: document.querySelector("#chatInput"),
       parseBtn: document.querySelector("#parseBtn"),
-      sampleBtn: document.querySelector("#sampleBtn"),
+      fileBtn: document.querySelector("#fileBtn"),
+      fileInput: document.querySelector("#fileInput"),
       parseError: document.querySelector("#parseError"),
       participantCard: document.querySelector("#participantCard"),
       participantList: document.querySelector("#participantList"),
       parseMeta: document.querySelector("#parseMeta"),
       previewCard: document.querySelector("#previewCard"),
       preview: document.querySelector("#preview"),
+      feelingCard: document.querySelector("#feelingCard"),
+      interestBtn: document.querySelector("#interestBtn"),
+      otherFeelingBtn: document.querySelector("#otherFeelingBtn"),
+      myFeelingBtn: document.querySelector("#myFeelingBtn"),
+      feelingResult: document.querySelector("#feelingResult"),
+      feelingError: document.querySelector("#feelingError"),
+      feelingTitle: document.querySelector("#feelingTitle"),
+      feelingScore: document.querySelector("#feelingScore"),
+      feelingFill: document.querySelector("#feelingFill"),
+      feelingSummary: document.querySelector("#feelingSummary"),
+      feelingSignals: document.querySelector("#feelingSignals"),
+      feelingCautions: document.querySelector("#feelingCautions"),
+      feelingTip: document.querySelector("#feelingTip"),
       analysisCard: document.querySelector("#analysisCard"),
       analyzeBtn: document.querySelector("#analyzeBtn"),
       analysisResult: document.querySelector("#analysisResult"),
@@ -681,7 +798,11 @@
     };
 
     el.parseBtn.addEventListener("click", parseConversation);
-    el.sampleBtn.addEventListener("click", insertSample);
+    el.fileBtn.addEventListener("click", () => el.fileInput.click());
+    el.fileInput.addEventListener("change", importChatFile);
+    el.interestBtn.addEventListener("click", () => analyzeFeeling("interest"));
+    el.otherFeelingBtn.addEventListener("click", () => analyzeFeeling("other"));
+    el.myFeelingBtn.addEventListener("click", () => analyzeFeeling("mine"));
     el.analyzeBtn.addEventListener("click", analyzeStyle);
     el.replyBtn.addEventListener("click", generateReplies);
     el.regenerateBtn.addEventListener("click", generateReplies);
@@ -822,9 +943,15 @@
       });
 
       unlock(el.previewCard);
+      unlock(el.feelingCard);
       unlock(el.analysisCard);
+      el.interestBtn.disabled = false;
+      el.otherFeelingBtn.disabled = false;
+      el.myFeelingBtn.disabled = false;
+      el.feelingResult.classList.remove("show");
       el.analyzeBtn.disabled = false;
       el.analysisResult.classList.remove("show");
+      clearError(el.feelingError);
       clearError(el.analysisError);
       renderPreview();
       lock(el.moodCard);
@@ -856,6 +983,58 @@
 
         row.append(sender, bubble);
         el.preview.append(row);
+      });
+    }
+
+    async function analyzeFeeling(mode) {
+      clearError(el.feelingError);
+      if (!state.me || state.messages.length < 4) {
+        showError(el.feelingError, "먼저 대화를 파싱하고 내 이름을 선택해주세요.");
+        return;
+      }
+
+      const buttons = [el.interestBtn, el.otherFeelingBtn, el.myFeelingBtn];
+      buttons.forEach((button) => {
+        button.disabled = true;
+      });
+      setStatus("대화에 드러난 감정 신호를 조심스럽게 분석하고 있습니다.");
+
+      try {
+        const data = await apiPost("/api/analyze-feelings", {
+          mode,
+          me: state.me,
+          messages: state.messages
+        });
+        renderFeeling(data);
+        setStatus("마음 분석을 완료했습니다. 결과는 참고용으로만 봐주세요.");
+      } catch (error) {
+        showError(el.feelingError, error.message);
+        setStatus("마음 분석 중 문제가 생겼습니다.");
+      } finally {
+        buttons.forEach((button) => {
+          button.disabled = false;
+        });
+      }
+    }
+
+    function renderFeeling(data) {
+      const score = Math.max(0, Math.min(100, Number(data.score) || 0));
+      el.feelingTitle.textContent = data.title || "마음 분석";
+      el.feelingScore.textContent = `${score}점`;
+      el.feelingFill.style.width = `${score}%`;
+      el.feelingSummary.textContent = data.summary || "";
+      renderList(el.feelingSignals, data.signals || []);
+      renderList(el.feelingCautions, data.cautions || []);
+      el.feelingTip.textContent = data.next_tip || "";
+      el.feelingResult.classList.add("show");
+    }
+
+    function renderList(container, items) {
+      container.innerHTML = "";
+      items.forEach((item) => {
+        const li = document.createElement("li");
+        li.textContent = item;
+        container.append(li);
       });
     }
 
@@ -1094,20 +1273,34 @@
       return `${prefix}: ${error.message}`;
     }
 
-    function insertSample() {
-      el.chatInput.value = [
-        "2026년 7월 5일 오후 9:12, 지민 : 오늘 뭐해?",
-        "2026년 7월 5일 오후 9:13, 나 : 집 가는 중ㅋㅋ",
-        "2026년 7월 5일 오후 9:14, 지민 : 오 내일 시간 돼?",
-        "2026년 7월 5일 오후 9:15, 나 : 내일 저녁은 될 듯!",
-        "2026년 7월 5일 오후 9:16, 나 : 왜왜 무슨 일 있어?",
-        "2026년 7월 5일 오후 9:20, 지민 : 밥 먹자고 하려고",
-        "2026년 7월 5일 오후 9:21, 나 : 좋지ㅋㅋ 어디 갈까",
-        "2026년 7월 5일 오후 9:22, 지민 : 파스타?",
-        "2026년 7월 5일 오후 9:23, 나 : 오 좋아 나 파스타 완전 가능",
-        "2026년 7월 5일 오후 9:24, 나 : 예약 필요하면 내가 볼게"
-      ].join("\n");
-      parseConversation();
+    function importChatFile() {
+      clearError(el.parseError);
+      const file = el.fileInput.files?.[0];
+      if (!file) return;
+
+      if (!file.name.toLowerCase().endsWith(".txt") && file.type && file.type !== "text/plain") {
+        showError(el.parseError, "카카오톡에서 내보낸 txt 파일만 불러올 수 있습니다.");
+        el.fileInput.value = "";
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        const text = String(reader.result || "").trim();
+        if (!text) {
+          showError(el.parseError, "파일 안에 읽을 수 있는 대화 내용이 없습니다.");
+          return;
+        }
+
+        el.chatInput.value = text;
+        setStatus(`${file.name} 파일을 불러왔습니다. 대화를 분석할게요.`);
+        parseConversation();
+      };
+      reader.onerror = () => {
+        showError(el.parseError, "파일을 읽는 중 문제가 생겼습니다. 다시 선택해주세요.");
+      };
+      reader.readAsText(file, "utf-8");
+      el.fileInput.value = "";
     }
 
     function resetAfterParse() {
@@ -1121,18 +1314,24 @@
       el.preview.innerHTML = '<p class="hint">내 이름을 선택하면 최근 대화가 채팅 버블로 표시됩니다.</p>';
       el.parseMeta.textContent = "아직 파싱된 대화가 없습니다.";
       el.analysisResult.classList.remove("show");
+      el.feelingResult.classList.remove("show");
       el.replyList.innerHTML = "";
       renderFlow();
       el.analyzeBtn.disabled = true;
       el.replyBtn.disabled = true;
       el.regenerateBtn.disabled = true;
       el.resetFlowBtn.disabled = true;
+      el.interestBtn.disabled = true;
+      el.otherFeelingBtn.disabled = true;
+      el.myFeelingBtn.disabled = true;
       lock(el.participantCard);
       lock(el.previewCard);
+      lock(el.feelingCard);
       lock(el.analysisCard);
       lock(el.moodCard);
       lock(el.replyCard);
       clearError(el.analysisError);
+      clearError(el.feelingError);
       clearError(el.replyError);
     }
 

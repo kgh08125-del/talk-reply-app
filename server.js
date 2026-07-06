@@ -30,6 +30,10 @@ const server = http.createServer(async (req, res) => {
       return handleReplies(req, res);
     }
 
+    if (req.method === "POST" && url.pathname === "/api/analyze-feelings") {
+      return handleFeelings(req, res);
+    }
+
     if (req.method === "GET") {
       return serveStatic(url.pathname, res);
     }
@@ -219,6 +223,106 @@ async function handleReplies(req, res) {
   }
 
   sendJson(res, 200, { replies });
+}
+
+async function handleFeelings(req, res) {
+  const body = await readJsonBody(req);
+  const messages = Array.isArray(body.messages) ? body.messages : [];
+  const me = String(body.me || "").trim();
+  const mode = String(body.mode || "interest").trim();
+
+  if (!me) {
+    return sendJson(res, 400, {
+      error: {
+        type: "validation_error",
+        message: "먼저 대화 참여자 중 내 이름을 선택해주세요."
+      }
+    });
+  }
+
+  if (messages.length < 4) {
+    return sendJson(res, 400, {
+      error: {
+        type: "validation_error",
+        message: "마음 분석을 하려면 실제 대화가 최소 4개 이상 필요합니다."
+      }
+    });
+  }
+
+  const modeLabel =
+    mode === "other"
+      ? "상대 마음 분석기"
+      : mode === "mine"
+        ? "내 마음 분석기"
+        : "호감도 체크";
+
+  const compactMessages = messages
+    .filter((message) => message && message.sender && message.text)
+    .slice(-80)
+    .map((message) => `${message.sender === me ? "나" : message.sender}: ${String(message.text).trim()}`);
+
+  const prompt = [
+    "너는 카카오톡 대화에서 감정 신호를 조심스럽게 읽어주는 한국어 대화 분석가다.",
+    "상대의 마음을 확정하거나 단정하지 않는다. 반드시 '대화에 드러난 신호 기준의 추정'으로 표현한다.",
+    "반드시 순수 JSON만 응답한다. 코드블록, 설명, 마크다운, 앞뒤 문장을 절대 붙이지 않는다.",
+    '응답 형식은 {"title":"...","score":0,"summary":"...","signals":["..."],"cautions":["..."],"next_tip":"..."} 이다.',
+    "score는 0부터 100 사이 정수다. 확실하지 않으면 중간 점수로 둔다.",
+    "summary는 1~2문장, signals는 3~4개, cautions는 1~2개, next_tip은 짧은 조언 1문장으로 쓴다.",
+    "",
+    `분석 모드: ${modeLabel}`,
+    `내 이름: ${me}`,
+    "",
+    "분석 기준:",
+    mode === "other"
+      ? "상대가 나에게 보이는 관심, 편안함, 거리감, 답장 태도, 질문 여부를 중심으로 본다."
+      : mode === "mine"
+        ? "내가 상대에게 보이는 관심, 기대감, 조심스러움, 표현 강도를 중심으로 본다."
+        : "서로의 호감 신호와 대화 온도를 균형 있게 본다.",
+    "",
+    "최근 대화:",
+    compactMessages.join("\n")
+  ].join("\n");
+
+  const result = await callGeminiJson({
+    prompt,
+    schema: {
+      type: "object",
+      properties: {
+        title: { type: "string" },
+        score: { type: "number" },
+        summary: { type: "string" },
+        signals: { type: "array", items: { type: "string" } },
+        cautions: { type: "array", items: { type: "string" } },
+        next_tip: { type: "string" }
+      },
+      required: ["title", "score", "summary", "signals", "cautions", "next_tip"]
+    }
+  });
+
+  if (result.error) {
+    return sendJson(res, result.status, { error: result.error });
+  }
+
+  const parsed = result.data;
+  if (!parsed || typeof parsed.summary !== "string" || !Array.isArray(parsed.signals)) {
+    return sendJson(res, 502, {
+      error: {
+        type: "json_parse_error",
+        message: "AI 응답 형식이 예상과 달라 마음 분석 결과를 읽지 못했습니다."
+      }
+    });
+  }
+
+  sendJson(res, 200, {
+    title: String(parsed.title || modeLabel).trim(),
+    score: Math.max(0, Math.min(100, Number.parseInt(parsed.score, 10) || 0)),
+    summary: parsed.summary.trim(),
+    signals: parsed.signals.map((signal) => String(signal).trim()).filter(Boolean).slice(0, 4),
+    cautions: Array.isArray(parsed.cautions)
+      ? parsed.cautions.map((caution) => String(caution).trim()).filter(Boolean).slice(0, 2)
+      : [],
+    next_tip: String(parsed.next_tip || "").trim()
+  });
 }
 
 async function callGeminiJson({ prompt, schema }) {
