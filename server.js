@@ -68,7 +68,7 @@ async function handleAnalyze(req, res) {
   const compactMessages = messages
     .map((message) => String(message || "").trim())
     .filter(Boolean)
-    .slice(-160);
+    .slice(-150);
 
   const prompt = [
     "너는 카카오톡 대화 말투를 분석하는 한국어 스타일 분석가다.",
@@ -84,7 +84,7 @@ async function handleAnalyze(req, res) {
     compactMessages.map((message, index) => `${index + 1}. ${message}`).join("\n")
   ].join("\n");
 
-  const result = await callGeminiJson({
+  const result = await callLlmJson({
     prompt,
     schema: {
       type: "object",
@@ -129,7 +129,7 @@ async function handleReplies(req, res) {
   const conversationContext = Array.isArray(body.conversationContext)
     ? body.conversationContext
         .filter((turn) => turn && typeof turn.text === "string")
-        .slice(-8)
+        .slice(-6)
         .map((turn) => ({
           role: turn.role === "me" ? "나" : "상대",
           text: turn.text.trim()
@@ -183,7 +183,7 @@ async function handleReplies(req, res) {
     "앞서 선택한 내 답장과 같은 말을 반복하지 말고, 대화가 자연스럽게 이어지도록 만들어줘."
   ].join("\n");
 
-  const result = await callGeminiJson({
+  const result = await callLlmJson({
     prompt,
     schema: {
       type: "object",
@@ -258,7 +258,7 @@ async function handleFeelings(req, res) {
 
   const compactMessages = messages
     .filter((message) => message && message.sender && message.text)
-    .slice(-80)
+    .slice(-150)
     .map((message) => `${message.sender === me ? "나" : message.sender}: ${String(message.text).trim()}`);
 
   const prompt = [
@@ -283,7 +283,7 @@ async function handleFeelings(req, res) {
     compactMessages.join("\n")
   ].join("\n");
 
-  const result = await callGeminiJson({
+  const result = await callLlmJson({
     prompt,
     schema: {
       type: "object",
@@ -325,6 +325,121 @@ async function handleFeelings(req, res) {
   });
 }
 
+async function callLlmJson({ prompt, schema }) {
+  const provider = String(process.env.LLM_PROVIDER || "gemini").toLowerCase();
+
+  if (provider === "openai") {
+    return callOpenAIJson({ prompt });
+  }
+
+  return callGeminiJson({ prompt, schema });
+}
+
+async function callOpenAIJson({ prompt }) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  const model = process.env.OPENAI_MODEL || "gpt-4.1-mini";
+
+  if (!apiKey || apiKey.includes("your-api-key-here")) {
+    return {
+      status: 500,
+      error: {
+        type: "api_key_error",
+        message: "OPENAI_API_KEY가 설정되어 있지 않습니다. Render 환경변수에 OpenAI API 키를 넣어주세요."
+      }
+    };
+  }
+
+  let response;
+  try {
+    response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model,
+        temperature: 0.7,
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: "너는 한국어 카카오톡 대화 분석과 답장 생성을 돕는 assistant다. 반드시 순수 JSON만 응답한다."
+          },
+          { role: "user", content: prompt }
+        ]
+      })
+    });
+  } catch (error) {
+    return {
+      status: 503,
+      error: {
+        type: "network_error",
+        message: "OpenAI API에 연결하지 못했습니다. 인터넷 연결이나 방화벽 설정을 확인해주세요."
+      }
+    };
+  }
+
+  const rawText = await response.text();
+
+  if (!response.ok) {
+    let apiMessage = "OpenAI API 요청이 실패했습니다.";
+    try {
+      const errorBody = JSON.parse(rawText);
+      apiMessage = errorBody.error?.message || apiMessage;
+    } catch (_) {
+      if (rawText) apiMessage = rawText.slice(0, 300);
+    }
+
+    return {
+      status: response.status === 429 ? 429 : 502,
+      error: {
+        type: "api_error",
+        message:
+          response.status === 429
+            ? "OpenAI API 사용량 한도 또는 속도 제한에 걸렸습니다. 잠시 후 다시 시도해주세요."
+            : apiMessage
+      }
+    };
+  }
+
+  let completion;
+  try {
+    completion = JSON.parse(rawText);
+  } catch (_) {
+    return {
+      status: 502,
+      error: {
+        type: "json_parse_error",
+        message: "OpenAI API 응답을 읽는 중 JSON 파싱에 실패했습니다."
+      }
+    };
+  }
+
+  const content = completion.choices?.[0]?.message?.content;
+  if (!content) {
+    return {
+      status: 502,
+      error: {
+        type: "api_error",
+        message: "OpenAI API 응답에 결과 내용이 없습니다."
+      }
+    };
+  }
+
+  try {
+    return { status: 200, data: JSON.parse(content) };
+  } catch (_) {
+    return {
+      status: 502,
+      error: {
+        type: "json_parse_error",
+        message: "AI가 순수 JSON이 아닌 응답을 반환했습니다. 다시 시도해주세요."
+      }
+    };
+  }
+}
+
 async function callGeminiJson({ prompt, schema }) {
   const apiKey = process.env.GEMINI_API_KEY;
   const model = process.env.GEMINI_MODEL || "gemini-2.5-flash";
@@ -335,16 +450,6 @@ async function callGeminiJson({ prompt, schema }) {
       error: {
         type: "api_key_error",
         message: ".env 파일에 GEMINI_API_KEY가 설정되어 있지 않습니다. Google AI Studio에서 만든 API 키를 넣어주세요."
-      }
-    };
-  }
-
-  if (!apiKey.startsWith("AIza")) {
-    return {
-      status: 500,
-      error: {
-        type: "api_key_error",
-        message: "GEMINI_API_KEY 모양이 올바르지 않습니다. Gemini API 키는 보통 AIza로 시작합니다."
       }
     };
   }
